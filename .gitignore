@@ -4,3 +4,8 @@
 *.opendb
 *.ipch
 *.sqlite
+*.filters
+*.vcxproj
+*.sln
+.vs/MultimediaProjekt/v15/.suo
+.vs/Multimedia-Project/v15/.suo
