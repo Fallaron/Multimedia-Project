@@ -2,6 +2,7 @@
 #include <opencv2\core.hpp>
 #include <opencv2\imgproc.hpp>
 #include <opencv2\highgui.hpp>
+#include "HOG\hog.h"
 
 #define TEMPLATEWIDTH 64
 #define TEMPLATEHEIGHT 128
@@ -11,7 +12,7 @@ using namespace std;
 using namespace cv;
 
 void slideOverImage(Mat img);
-
+void getHOGFeatureArrayOnScaleAt(int x, int y, Mat img, int scale);
 
 int main() {
 	cout << "Hello World";
@@ -21,6 +22,20 @@ int main() {
 
 }
 
+//scale 0 = just img;
+void getHOGFeatureArrayOnScaleAt(int x, int y, Mat img, int scale) {
+	Mat cutout;
+	double scalingfactor = pow(2, 1.0 / ALPHA);
+	int templatew = TEMPLATEWIDTH;
+	templatew*= pow(scalingfactor, scale);
+	int templateh = TEMPLATEHEIGHT;
+	templateh *= pow(scalingfactor, scale);
+	img(Rect(x, y, templatew, templateh)).copyTo(cutout);
+	vector<int> dims;
+	double ***featArray = computeHoG(cutout, 8, dims);
+	
+
+}
 void slideOverImage(Mat img) {
 	int imgheight = img.size().height;
 	int imgwidth = img.size().width;
@@ -30,24 +45,16 @@ void slideOverImage(Mat img) {
 	int templatew = TEMPLATEWIDTH;
 	while (canGoDeeper) {
 		//TODO think about y++
-		for (int y = 0; y < imgheight; y++) {
-			for (int x = 0; x < imgwidth; x++) {
-				if (x + TEMPLATEWIDTH >= imgwidth)
-					break;
+		for (int y = 0; y < imgheight-TEMPLATEHEIGHT; y++) {
+			for (int x = 0; x < imgwidth-TEMPLATEWIDTH; x++) {
 				//x,y for HOGfeature in Template
-				//if found calc template height and with in original picute
-				/*for (int i = 0; i < stage; i++) {
-					templatew *= pow(2, 1.0 / ALPHA);
-					templateh *= pow(2, 1.0 / ALPHA);
-				}*/
+				getHOGFeatureArrayOnScaleAt(x, y, img, stage);
 
 				
-				templatew *= pow(pow(2, 1.0 / ALPHA), stage);
-				templateh *= pow(pow(2, 1.0 / ALPHA), stage);
+				
 
 			}
-			if (y + TEMPLATEHEIGHT >= imgheight)
-				break;
+		
 			
 		}
 		//downsample
