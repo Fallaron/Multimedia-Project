@@ -79,18 +79,17 @@ bool is_detection_Ok(int det_detail[], int annot_index, const std::vector<std::v
 }
 
 double *** get_HOG_feat_trainSet(cv::Mat img, const int cell_size, std::vector<int>& dims) {
-	
 	double ***featArray_HoG;
 	std::vector<int> dims_HoG = vector<int>(3);
-	//for a particular image calculate the features..
 	if (!img.empty())
 		featArray_HoG = computeHoG(img, cell_size, dims_HoG);
+	else
+		cout << "No image found!" << endl;
 
 	//Memory for features vector
 	int dim_y = dims_HoG[0];
 	int dim_x = dims_HoG[1];
 	int dim_z = 27 + 4 + 1;
-
 	double*** featArray = (double***)malloc(dim_y * sizeof(double**));
 	for (int i = 0; i < dim_y; ++i) {
 		featArray[i] = (double**)malloc(dim_x * sizeof(double*));
@@ -98,7 +97,6 @@ double *** get_HOG_feat_trainSet(cv::Mat img, const int cell_size, std::vector<i
 			featArray[i][j] = (double*)malloc(dim_z * sizeof(double));
 		}
 	}
-
 	dims = vector<int>(3);
 	dims[0] = dim_y;
 	dims[1] = dim_x;
@@ -109,7 +107,6 @@ double *** get_HOG_feat_trainSet(cv::Mat img, const int cell_size, std::vector<i
 	int num_Hblocks = dims_HoG[1] - 1;
 	int Vblocks = 0;
 	int Hblocks;
-
 	for (int i = 0; i < dims_HoG[0] - 1; i++) {
 		Hblocks = 0;
 		for (int j = 0; j < dims_HoG[1] - 1; j++) {
@@ -128,7 +125,7 @@ double *** get_HOG_feat_trainSet(cv::Mat img, const int cell_size, std::vector<i
 			for (int n = i; n < 2 + i; n++) {
 				for (int m = j; m < 2 + j; m++) {
 					for (int k = 0; k < dims[2]; k++) {
-						featArray[n][m][k] = featArray_HoG[n][m][k] / block_norm_factor; // there is 50% overlapp!!??
+						featArray[n][m][k] = featArray_HoG[n][m][k] / block_norm_factor;
 					}
 				}
 			} // form new block
@@ -137,5 +134,6 @@ double *** get_HOG_feat_trainSet(cv::Mat img, const int cell_size, std::vector<i
 		Vblocks++;
 	}
 	cout << "Blocks V - H " << Vblocks << "  - " << Hblocks << " , ";
+	return featArray;
 }
 
