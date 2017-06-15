@@ -78,3 +78,15 @@ bool is_detection_Ok(int det_detail[], int annot_index, const std::vector<std::v
 	return status;
 }
 
+void get_HOG_feat_train(std::string img_list_file_path, double ***&featArray, const int cell_size, std::vector<int>& dims) {
+	ifstream img_lst;
+	string img_path;
+	img_lst.open(img_list_file_path);
+	// for each image compute the HoG and write back the values by reference repeat till list is done.
+	while (!img_lst.eof()) {
+		getline(img_lst, img_path);
+		cv::Mat img = imread(img_path);
+		if (!img.empty())
+			featArray = computeHoG(img, cell_size, dims);
+	}
+}
