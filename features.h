@@ -12,4 +12,4 @@ void  getBoundingBox(std::string annotationList, std::vector<std::vector<int>>& 
 
 bool is_detection_Ok();
 
-void get_HOG_feat_train(std::string img_list_file_path, double ***&featArray, const int cell_size, std::vector<int>& dims);
+double *** get_HOG_feat_trainSet(cv::Mat img, const int cell_size, std::vector<int>& dims);
