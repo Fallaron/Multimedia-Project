@@ -1,5 +1,5 @@
-#include "t1.1.h"
-
+#include "features.h"
+#include "src\HOG\hog.h"
 using namespace cv;
 using namespace std;
 
@@ -55,3 +55,26 @@ void  getBoundingBox(std::string annotationList, std::vector<std::vector<int>>& 
 		annotationlst.close();
 	}
 }
+
+bool is_detection_Ok(int det_detail[], int annot_index, const std::vector<std::vector<int>> boundingBoxes) {
+	//det_detail[] entail detector width and height and int x, int y for locality..
+	/***** still thinking *****/
+	
+	bool status = false;
+	int x1 = boundingBoxes[annot_index][0];
+	int y1 = boundingBoxes[annot_index][1];
+	int x2 = boundingBoxes[annot_index][2];
+	int y2 = boundingBoxes[annot_index][3];
+
+	cv::Rect detect_rect(det_detail[0], det_detail[1], det_detail[2], det_detail[3]);
+	cv::Rect annot_rect(x1, y1, x2 - x1, y2 - y1);
+	cv::Rect intersect_rect = detect_rect & annot_rect;
+	cv::Rect union_rect = detect_rect | annot_rect;
+
+	double overlap = intersect_rect.area() / union_rect.area();
+	if (overlap > 0.5)
+		status = true;
+	
+	return status;
+}
+
