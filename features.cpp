@@ -90,8 +90,9 @@ double ** get_HOG_feat_trainSet(cv::Mat img, const int cell_size, std::vector<in
 	else
 		cout << "No image found!" << endl;
 
-	//Memory for features vector
-	int dim_y = dims_HoG[0] * dims_HoG[1] - 2; // for a 64 x 128 patch
+	//Memory for features vector for a 64 x 128 patch (detector window)
+
+	int dim_y = (dims_HoG[0] - 3) * (dims_HoG[1] - 3); 
 	int dim_x = dims_HoG[2] * BLOCK_SIZE * 2;
 
 	double** featArray = (double**)malloc(dim_y * sizeof(double*));
@@ -103,45 +104,44 @@ double ** get_HOG_feat_trainSet(cv::Mat img, const int cell_size, std::vector<in
 	dims[1] = dim_x;
 
 	// blocks
-	int num_Vblocks = dims_HoG[0] - 1;
-	int num_Hblocks = dims_HoG[1] - 1;
 	int Vblocks = 0;
 	int Hblocks;
 	int vec = 0;
+	vector<double> feature;
 
-	for (int i = 0; i < dims_HoG[0] - 1; i++) {
+	for (int i = 0; i < dims_HoG[0] - BLOCK_SIZE; i++) {
 		Hblocks = 0;
-		for (int j = 0; j < dims_HoG[1] - 1; j++) {
+		for (int j = 0; j < dims_HoG[1] - BLOCK_SIZE; j++) {
 			//traverse 2 cells right and then 2 down-- forming a single block			
 			double block_norm_factor = 1;
 			for (int n = i; n < BLOCK_SIZE + i; n++) {
 				for (int m = j; m < BLOCK_SIZE + j; m++) {
 					for (int k = 0; k < dims_HoG[2]; k++) {
-						double val = featArray_HoG[n][m][k];
+						double val = featArray_HoG[n + 1][m + 1][k];
 						block_norm_factor += val * val;
 					}
 				}
 			}
-			// normalize block and save the feature
-			vector<double> feature;
+			// normalize block and save the feature	
 			block_norm_factor = pow(block_norm_factor, 0.5);
 			for (int n = i; n < BLOCK_SIZE + i; n++) {
 				for (int m = j; m < BLOCK_SIZE + j; m++) {
 					for (int k = 0; k < dims_HoG[2]; k++) {
-						 feature.push_back(featArray_HoG[n][m][k] / block_norm_factor);
+						 feature.push_back(featArray_HoG[n +1][m + 1][k] / block_norm_factor);
 					}
 				}
 			} 
-			//concatnate vectors
+			//concatnate vectors to form a single feature
 			for (int j = 0; j < dims[1]; j++) {
 				featArray[vec][j] = feature[j];
 			}
-			vec++;
+			feature.clear();		
 			Hblocks++;
 		}
+		vec++;
 		Vblocks++;
 	}
-	cout << "Blocks V - H " << Vblocks << "  - " << Hblocks << " , ";
+	cout << "Blocks V - H " << Vblocks - 1 << "  - " << Hblocks - 1 << " , ";
 	return featArray;
 }
 
