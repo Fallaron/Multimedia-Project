@@ -1,5 +1,8 @@
 #include "features.h"
 #include "src\HOG\hog.h"
+
+#define BLOCK_SIZE 2
+
 using namespace cv;
 using namespace std;
 
@@ -78,57 +81,62 @@ bool is_detection_Ok(int det_detail[], int annot_index, const std::vector<std::v
 	return status;
 }
 
-double *** get_HOG_feat_trainSet(cv::Mat img, const int cell_size, std::vector<int>& dims) {
+double ** get_HOG_feat_trainSet(cv::Mat img, const int cell_size, std::vector<int>& dims) {
 	double ***featArray_HoG;
 	std::vector<int> dims_HoG = vector<int>(3);
+
 	if (!img.empty())
 		featArray_HoG = computeHoG(img, cell_size, dims_HoG);
 	else
 		cout << "No image found!" << endl;
 
 	//Memory for features vector
-	int dim_y = dims_HoG[0];
-	int dim_x = dims_HoG[1];
-	int dim_z = 27 + 4 + 1;
-	double*** featArray = (double***)malloc(dim_y * sizeof(double**));
+	int dim_y = dims_HoG[0] * dims_HoG[1] - 2; // for a 64 x 128 patch
+	int dim_x = dims_HoG[2] * BLOCK_SIZE * 2;
+
+	double** featArray = (double**)malloc(dim_y * sizeof(double*));
 	for (int i = 0; i < dim_y; ++i) {
-		featArray[i] = (double**)malloc(dim_x * sizeof(double*));
-		for (int j = 0; j < dim_x; ++j) {
-			featArray[i][j] = (double*)malloc(dim_z * sizeof(double));
-		}
+		featArray[i] = (double*)malloc(dim_x * sizeof(double));
 	}
-	dims = vector<int>(3);
+	dims = vector<int>(2);
 	dims[0] = dim_y;
 	dims[1] = dim_x;
-	dims[2] = dim_z;
 
 	// blocks
 	int num_Vblocks = dims_HoG[0] - 1;
 	int num_Hblocks = dims_HoG[1] - 1;
 	int Vblocks = 0;
 	int Hblocks;
+	int vec = 0;
+
 	for (int i = 0; i < dims_HoG[0] - 1; i++) {
 		Hblocks = 0;
 		for (int j = 0; j < dims_HoG[1] - 1; j++) {
 			//traverse 2 cells right and then 2 down-- forming a single block			
 			double block_norm_factor = 1;
-			for (int n = i; n < 2 + i; n++) {
-				for (int m = j; m < 2 + j; m++) {
+			for (int n = i; n < BLOCK_SIZE + i; n++) {
+				for (int m = j; m < BLOCK_SIZE + j; m++) {
 					for (int k = 0; k < dims_HoG[2]; k++) {
 						double val = featArray_HoG[n][m][k];
 						block_norm_factor += val * val;
 					}
 				}
 			}
-			// normalize block and save the descriptor
+			// normalize block and save the feature
+			vector<double> feature;
 			block_norm_factor = pow(block_norm_factor, 0.5);
-			for (int n = i; n < 2 + i; n++) {
-				for (int m = j; m < 2 + j; m++) {
-					for (int k = 0; k < dims[2]; k++) {
-						featArray[n][m][k] = featArray_HoG[n][m][k] / block_norm_factor;
+			for (int n = i; n < BLOCK_SIZE + i; n++) {
+				for (int m = j; m < BLOCK_SIZE + j; m++) {
+					for (int k = 0; k < dims_HoG[2]; k++) {
+						 feature.push_back(featArray_HoG[n][m][k] / block_norm_factor);
 					}
 				}
-			} // form new block
+			} 
+			//concatnate vectors
+			for (int j = 0; j < dims[1]; j++) {
+				featArray[vec][j] = feature[j];
+			}
+			vec++;
 			Hblocks++;
 		}
 		Vblocks++;
