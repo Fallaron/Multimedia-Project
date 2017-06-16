@@ -16,3 +16,5 @@ If you face problems, check your project settings:
 ## Misc
 * Try to use self explanatory variable and method names
 * Use english names & comments
+* if you're using VS 2017, you need the [2015 Build tools](http://landinghub.visualstudio.com/visual-cpp-build-tools). 
+
