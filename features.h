@@ -11,4 +11,4 @@
 void  getBoundingBox(std::string annotationList, std::vector<std::vector<int>>& boundingBoxes);
 bool is_detection_Ok();
 void get_HoG_feat_trainSets(double **&dataSet_featArray, std::string dataSet_path, const int cell_size, std::vector<int>& feat_dims, bool pos_Set);
-void get_dataSet(std::string dataSet_listFile_path, vector<string>& img_paths);
+void get_dataSet(std::string dataSet_listFile_path, std::vector<std::string>& img_paths);

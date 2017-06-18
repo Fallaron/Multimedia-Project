@@ -191,7 +191,7 @@ void get_HoG_feat_trainSets(double **&dataSet_featArray, std::string dataSet_pat
 }
 
 // reads the dataset *.*ls files and returns paths to images as strings in an Array
-void get_dataSet(std::string dataSet_listFile_path, vector<string>& img_paths) {
+void get_dataSet(std::string dataSet_listFile_path, vector<std::string>& img_paths) {
 	img_paths = vector<string>();
 	ifstream img_lst;
 	string img_path;
