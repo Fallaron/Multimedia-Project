@@ -103,6 +103,7 @@ void slideOverImage(Mat img) {
 				//size of Template in Original Window, may be needed in Future.
 				if (true) {
 					double scale = pow(scalingfactor, stage);
+					Scalar green(0, 255, 0);
 
 					int templatew = TEMPLATEWIDTH;
 					templatew *= scale;
@@ -112,14 +113,11 @@ void slideOverImage(Mat img) {
 					int newy = y* scale;
 					Mat copy;
 					src.copyTo(copy);
-					Point p1(newx, newy);
-					Point p2(newx + templatew,newy);
-					Point p3(newx, newy + templateh);
-					Point p4(newx + templatew, newy + templateh);
-					line(copy, p1, p2, Scalar(0, 255, 0));
-					line(copy, p1, p3, Scalar(0, 255, 0));
-					line(copy, p3, p4, Scalar(0, 255, 0));
-					line(copy, p4, p2, Scalar(0, 255, 0));
+					Point tl(newx, newy);
+					Point br(newx + templatew, newy + templateh);
+					//Point bl(newx + templatew,newy);
+					//Point tr(newx, newy + templateh);
+					rectangle(copy, tl, br, green);
 
 					imshow("Template", copy);
 					waitKey();
