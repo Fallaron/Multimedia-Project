@@ -13,6 +13,7 @@
 #define ALPHA 5
 //should be 2^n for better hog aggregation
 #define CELLSIZE 8
+
 using namespace std;
 using namespace cv;
 
@@ -22,7 +23,6 @@ double*** getHOGFeatureArrayOnScaleAt(int x, int y, vector<int> &dims, double **
 int main() {
 	Mat img = imread("lenna.png");
 	slideOverImage(img);
-
 }
 
 //scale 0 = just img;
@@ -65,7 +65,6 @@ double*** getHOGFeatureArrayOnScaleAt(int x, int y, vector<int> &dims, double **
 			}
 			features[i][j] = featArray[i + hogposH][j + hogposW];
 		}
-
 	}
 	return features;
 }
@@ -87,12 +86,10 @@ void slideOverImage(Mat img) {
 		for (int y = CELLSIZE; y < imgheight-TEMPLATEHEIGHT; y+=CELLSIZE) {
 			for (int x = CELLSIZE; x < imgwidth-TEMPLATEWIDTH; x+=CELLSIZE) {
 				//x,y for HOGfeature in Template
-				try
-				{
+				try	{
 					double *** feat = getHOGFeatureArrayOnScaleAt(x, y, dims, featArray);
 				}
-				catch (int n)
-				{
+				catch (int n) {
 					if (n == TEMPLATEFAILUREHEIGHT)
 						cout << "HEIGHTERROR" << endl;
 					if (n == TEMPLATEFAILUREWIDTH)
@@ -121,18 +118,19 @@ void slideOverImage(Mat img) {
 
 					imshow("Template", copy);
 					waitKey();
-					
-
 				}
 
 				//Do Something with Aggregated HoG Array
 			}
 		}
 		//downsample
+
 		//imshow("Test", img);
 		//waitKey();
+
 		int w = floor(img.cols / pow(2, 1.0 / ALPHA));
 		int h = floor(img.rows / pow(2, 1.0 / ALPHA));
+
 		//TODO Use Gaus for each octave
 		resize(img, img,Size(w,h));
 		imgheight = img.size().height;
@@ -141,7 +139,4 @@ void slideOverImage(Mat img) {
 
 		cout << "Width: " << img.size().width << " -- Height: " << img.size().height << endl;
 	}
-
-
-
 }
