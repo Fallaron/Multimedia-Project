@@ -62,20 +62,27 @@ void  getBoundingBox(std::string annotationList, std::vector<std::vector<int>>& 
 	}
 }
 
-bool is_detection_Ok(int detector_pos[], int annot_index, const std::vector<std::vector<int>> boundingBoxes) {
-	// functions determines the true positive, false negative detections.. evaluation tool
-	//detector_pos[] entails int x, int y for locality..
+bool is_detection_true(int prediction_bBox[], int img_index, const std::vector<std::vector<int>> boundingBoxes) {
+	// functions determines the true positive, false positive detections etc.. evaluation tool
+	//prediction_bBox[] entails int x, int y for locality and scale..
 
 	bool status = false;
-	int x1 = boundingBoxes[annot_index][0];
-	int y1 = boundingBoxes[annot_index][1];
-	int x2 = boundingBoxes[annot_index][2];
-	int y2 = boundingBoxes[annot_index][3];
+	int x1 = boundingBoxes[img_index][0];
+	int y1 = boundingBoxes[img_index][1];
+	int x2 = boundingBoxes[img_index][2];
+	int y2 = boundingBoxes[img_index][3];
 
-	cv::Rect detect_rect(detector_pos[0], detector_pos[1], DETECTORWIDTH, DETECTORHEIGHT);
-	cv::Rect annot_rect(x1, y1, x2 - x1, y2 - y1);
-	cv::Rect intersect_rect = detect_rect & annot_rect;
-	cv::Rect union_rect = detect_rect | annot_rect;
+	double scale = prediction_bBox[0];
+	int pos_x = prediction_bBox[0] * scale;
+	int pos_y = prediction_bBox[1] * scale;
+	
+	int width = pos_x + DETECTORWIDTH * scale;
+	int height = pos_y + DETECTORHEIGHT * scale;
+
+	cv::Rect Predicted_bBox(pos_x, pos_y, width, height);
+	cv::Rect groundtruth_bBox(x1, y1, x2 - x1, y2 - y1);
+	cv::Rect intersect_rect = Predicted_bBox & groundtruth_bBox;
+	cv::Rect union_rect = Predicted_bBox | groundtruth_bBox;
 
 	double overlap = intersect_rect.area() / union_rect.area();
 	if (overlap > 0.5)
