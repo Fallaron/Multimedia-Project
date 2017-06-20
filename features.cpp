@@ -73,8 +73,8 @@ bool is_detection_true(int prediction_bBox[], int img_index, const std::vector<s
 	int y2 = boundingBoxes[img_index][3];
 
 	double scale = prediction_bBox[0];
-	int pos_x = prediction_bBox[0] * scale;
-	int pos_y = prediction_bBox[1] * scale;
+	int pos_x = prediction_bBox[1] * scale;
+	int pos_y = prediction_bBox[2] * scale;
 	
 	int width = pos_x + DETECTORWIDTH * scale;
 	int height = pos_y + DETECTORHEIGHT * scale;
@@ -189,11 +189,11 @@ void get_HoG_feat_trainSets(double **&dataSet_featArray, std::string dataSet_pat
 		 // deallocate memory for FHOG
 		for (int i = 0; i < FHoG_dims[0]; i++) {
 			for (int j = 0; j < FHoG_dims[1]; j++) {
-				delete[] FHoG[i][j];
+				free(FHoG[i][j]);
 			}
-			delete[] FHoG[i];
+			free(FHoG[i]);
 		}
-		delete FHoG;
+		free(FHoG);
 	}// end else
 }
 

@@ -21,9 +21,15 @@
     <ClCompile Include="src\hog\hog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="features.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\hog\hog.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="features.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
