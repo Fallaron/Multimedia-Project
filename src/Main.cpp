@@ -1,7 +1,9 @@
 #include <iostream>
+#include <fstream>
 #include <opencv2\core.hpp>
 #include <opencv2\imgproc.hpp>
 #include <opencv2\highgui.hpp>
+#include <opencv2\ml.hpp>
 #include "HOG\hog.h"
 
 #define ALLOCATIONFAULT -666
@@ -11,18 +13,81 @@
 #define TEMPLATEWIDTH 64
 #define TEMPLATEHEIGHT 128
 #define ALPHA 5
+
+#define POSFILE "pos.lst"
+#define NEGFILE "neg.lst"
+
 //should be 2^n for better hog aggregation
 #define CELLSIZE 8
+
+
 using namespace std;
 using namespace cv;
-
+vector<double***> generatePositivTrainingData(String path);
+vector<double***> generateNegativTrainingsData(String path);
 void slideOverImage(Mat img);
 double*** getHOGFeatureArrayOnScaleAt(int x, int y, vector<int> &dims, double *** featArray) throw (int);
 
 int main() {
 	Mat img = imread("lenna.png");
-	slideOverImage(img);
+	//slideOverImage(img);
+	vector<double***> neg = generateNegativTrainingsData(NEGFILE);
+	vector<double***> pos = generatePositivTrainingData(POSFILE);
+	cout << "pos: " << pos.size() << endl << "neg: " << neg.size() << endl;
 
+	Mat train = Mat(neg);
+
+	getchar();
+}
+
+
+vector<double***> generatePositivTrainingData(String path) {
+	ifstream locations;
+	locations.open(path);
+	String file;
+	vector<double***> positivHogFeatures;
+	while (getline(locations, file)) {
+		Mat img = imread(file);
+		vector<int> dims;
+		double*** feat = computeHoG(img, CELLSIZE, dims);
+		double*** positiv = getHOGFeatureArrayOnScaleAt(16, 16, dims, feat);
+		positivHogFeatures.push_back(positiv);
+	}
+	cout << "Generated Positiv Training Hog Features" << endl;
+	return positivHogFeatures;
+}
+
+
+vector<double***> generateNegativTrainingsData(String path) {
+	ifstream locations;
+	locations.open(path);
+	String file;
+	vector<double***> negativHogFeatures;
+	int c = 0;
+	while (getline(locations, file)) {
+		Mat img = imread(file);
+		vector<int> dims;
+		double*** feat = computeHoG(img, CELLSIZE, dims);
+		c = 0;
+		for (int y = CELLSIZE; y < img.rows - TEMPLATEHEIGHT && c < 10; y += CELLSIZE) {
+			for (int x = CELLSIZE; x < img.cols - TEMPLATEWIDTH && c < 10; x += CELLSIZE) {
+				try
+				{
+					double *** featuresNEG = getHOGFeatureArrayOnScaleAt(x, y, dims, feat);
+					negativHogFeatures.push_back(featuresNEG);
+					c++;
+				}
+				catch (int n)
+				{
+					continue;
+				}
+			}
+		}
+		if (c < 10)
+			cout << "FAULT";
+	}
+	cout << "Generated Negative Training Hog Features" << endl;
+	return negativHogFeatures;
 }
 
 //scale 0 = just img;
@@ -122,7 +187,7 @@ void slideOverImage(Mat img) {
 					line(copy, p4, p2, Scalar(0, 255, 0));
 
 					imshow("Template", copy);
-					waitKey();
+					waitKey(1);
 					
 
 				}
