@@ -92,7 +92,7 @@ vector<double***> generateNegativTrainingsData(String path) {
 
 //scale 0 = just img;
 double*** getHOGFeatureArrayOnScaleAt(int x, int y, vector<int> &dims, double *** featArray) throw (int) {
-	
+
 	int hogposW = x/CELLSIZE -1;
 	int hogposH = y/CELLSIZE -1;
 	int featW = TEMPLATEWIDTH / CELLSIZE;
@@ -119,7 +119,7 @@ double*** getHOGFeatureArrayOnScaleAt(int x, int y, vector<int> &dims, double **
 			if (dims[0] <= i + hogposH)  {
 				delete[] *features;
 				delete[] features;
-				
+
 				throw TEMPLATEFAILUREHEIGHT;
 			}
 			if (dims[1] <= j + hogposW) {
@@ -130,7 +130,6 @@ double*** getHOGFeatureArrayOnScaleAt(int x, int y, vector<int> &dims, double **
 			}
 			features[i][j] = featArray[i + hogposH][j + hogposW];
 		}
-
 	}
 	return features;
 }
@@ -152,22 +151,21 @@ void slideOverImage(Mat img) {
 		for (int y = CELLSIZE; y < imgheight-TEMPLATEHEIGHT; y+=CELLSIZE) {
 			for (int x = CELLSIZE; x < imgwidth-TEMPLATEWIDTH; x+=CELLSIZE) {
 				//x,y for HOGfeature in Template
-				try
-				{
+				try	{
 					double *** feat = getHOGFeatureArrayOnScaleAt(x, y, dims, featArray);
 				}
-				catch (int n)
-				{
+				catch (int n) {
 					if (n == TEMPLATEFAILUREHEIGHT)
 						cout << "HEIGHTERROR" << endl;
 					if (n == TEMPLATEFAILUREWIDTH)
 						cout << "WIDTHERROR" << endl;
 					continue;
 				}
-				
+
 				//size of Template in Original Window, may be needed in Future.
 				if (true) {
 					double scale = pow(scalingfactor, stage);
+					Scalar green(0, 255, 0);
 
 					int templatew = TEMPLATEWIDTH;
 					templatew *= scale;
@@ -177,29 +175,27 @@ void slideOverImage(Mat img) {
 					int newy = y* scale;
 					Mat copy;
 					src.copyTo(copy);
-					Point p1(newx, newy);
-					Point p2(newx + templatew,newy);
-					Point p3(newx, newy + templateh);
-					Point p4(newx + templatew, newy + templateh);
-					line(copy, p1, p2, Scalar(0, 255, 0));
-					line(copy, p1, p3, Scalar(0, 255, 0));
-					line(copy, p3, p4, Scalar(0, 255, 0));
-					line(copy, p4, p2, Scalar(0, 255, 0));
+					Point tl(newx, newy);
+					Point br(newx + templatew, newy + templateh);
+					//Point bl(newx + templatew,newy);
+					//Point tr(newx, newy + templateh);
+					rectangle(copy, tl, br, green);
 
 					imshow("Template", copy);
-					waitKey(1);
-					
-
+					waitKey();
 				}
 
 				//Do Something with Aggregated HoG Array
 			}
 		}
 		//downsample
+
 		//imshow("Test", img);
 		//waitKey();
+
 		int w = floor(img.cols / pow(2, 1.0 / ALPHA));
 		int h = floor(img.rows / pow(2, 1.0 / ALPHA));
+
 		//TODO Use Gaus for each octave
 		resize(img, img,Size(w,h));
 		imgheight = img.size().height;
@@ -208,7 +204,4 @@ void slideOverImage(Mat img) {
 
 		cout << "Width: " << img.size().width << " -- Height: " << img.size().height << endl;
 	}
-
-
-
 }

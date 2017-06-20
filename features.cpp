@@ -1,7 +1,10 @@
 #include "features.h"
 #include "src\HOG\hog.h"
+#include <ctime>
 
-#define BLOCK_SIZE 2
+#define DETECTORWIDTH 64
+#define DETECTORHEIGHT 128
+#define CUTOFF 1
 
 using namespace cv;
 using namespace std;
@@ -59,89 +62,149 @@ void  getBoundingBox(std::string annotationList, std::vector<std::vector<int>>& 
 	}
 }
 
-bool is_detection_Ok(int det_detail[], int annot_index, const std::vector<std::vector<int>> boundingBoxes) {
-	//det_detail[] entail detector width and height and int x, int y for locality..
-	/***** still thinking *****/
-	
-	bool status = false;
-	int x1 = boundingBoxes[annot_index][0];
-	int y1 = boundingBoxes[annot_index][1];
-	int x2 = boundingBoxes[annot_index][2];
-	int y2 = boundingBoxes[annot_index][3];
+bool is_detection_true(int prediction_bBox[], int img_index, const std::vector<std::vector<int>> boundingBoxes) {
+	// functions determines the true positive, false positive detections etc.. evaluation tool
+	//prediction_bBox[] entails int x, int y for locality and scale..
 
-	cv::Rect detect_rect(det_detail[0], det_detail[1], det_detail[2], det_detail[3]);
-	cv::Rect annot_rect(x1, y1, x2 - x1, y2 - y1);
-	cv::Rect intersect_rect = detect_rect & annot_rect;
-	cv::Rect union_rect = detect_rect | annot_rect;
+	bool status = false;
+	int x1 = boundingBoxes[img_index][0];
+	int y1 = boundingBoxes[img_index][1];
+	int x2 = boundingBoxes[img_index][2];
+	int y2 = boundingBoxes[img_index][3];
+
+	double scale = prediction_bBox[0];
+	int pos_x = prediction_bBox[0] * scale;
+	int pos_y = prediction_bBox[1] * scale;
+	
+	int width = pos_x + DETECTORWIDTH * scale;
+	int height = pos_y + DETECTORHEIGHT * scale;
+
+	cv::Rect Predicted_bBox(pos_x, pos_y, width, height);
+	cv::Rect groundtruth_bBox(x1, y1, x2 - x1, y2 - y1);
+	cv::Rect intersect_rect = Predicted_bBox & groundtruth_bBox;
+	cv::Rect union_rect = Predicted_bBox | groundtruth_bBox;
 
 	double overlap = intersect_rect.area() / union_rect.area();
 	if (overlap > 0.5)
 		status = true;
-	
 	return status;
 }
 
-double ** get_HOG_feat_trainSet(cv::Mat img, const int cell_size, std::vector<int>& dims) {
-	double ***featArray_HoG;
-	std::vector<int> dims_HoG = vector<int>(3);
+// set boolean to false and path to neg samples to extract neg sample features else extract pos features..
+// dataSet_featArray is used to trains the classifier
+void get_HoG_feat_trainSets(double **&dataSet_featArray, std::string dataSet_path, const int cell_size, std::vector<int>& feat_dims, bool pos_Set) {
+	feat_dims = vector<int>(2);
+	vector<string> dataSet_img_paths;
+	get_dataSet(dataSet_path, dataSet_img_paths);
+	int num_img = dataSet_img_paths.size();
 
-	if (!img.empty())
-		featArray_HoG = computeHoG(img, cell_size, dims_HoG);
-	else
-		cout << "No image found!" << endl;
+	if (pos_Set == false) {
+		int patchWidth = 80;
+		int patchHeight = 144;
+		srand(time(NULL));
+		cv::Mat img_patch;
+		int num_img_patches;
+		int num_img = dataSet_img_paths.size();
+		int p = 0;
 
-	//Memory for features vector for a 64 x 128 patch (detector window)
+		vector<int> dims;
+		int y = (DETECTORWIDTH / cell_size);
+		int x = (DETECTORHEIGHT/ cell_size);
+		int num_dims = 32;
+		int total_num_imgs = num_img * 10;
+		int features = y * x * num_dims;
 
-	int dim_y = (dims_HoG[0] - 3) * (dims_HoG[1] - 3); 
-	int dim_x = dims_HoG[2] * BLOCK_SIZE * 2;
-
-	double** featArray = (double**)malloc(dim_y * sizeof(double*));
-	for (int i = 0; i < dim_y; ++i) {
-		featArray[i] = (double*)malloc(dim_x * sizeof(double));
-	}
-	dims = vector<int>(2);
-	dims[0] = dim_y;
-	dims[1] = dim_x;
-
-	// blocks
-	int Vblocks = 0;
-	int Hblocks;
-	int vec = 0;
-	vector<double> feature;
-
-	for (int i = 0; i < dims_HoG[0] - BLOCK_SIZE; i++) {
-		Hblocks = 0;
-		for (int j = 0; j < dims_HoG[1] - BLOCK_SIZE; j++) {
-			//traverse 2 cells right and then 2 down-- forming a single block			
-			double block_norm_factor = 1;
-			for (int n = i; n < BLOCK_SIZE + i; n++) {
-				for (int m = j; m < BLOCK_SIZE + j; m++) {
-					for (int k = 0; k < dims_HoG[2]; k++) {
-						double val = featArray_HoG[n + 1][m + 1][k];
-						block_norm_factor += val * val;
-					}
-				}
-			}
-			// normalize block and save the feature	
-			block_norm_factor = pow(block_norm_factor, 0.5);
-			for (int n = i; n < BLOCK_SIZE + i; n++) {
-				for (int m = j; m < BLOCK_SIZE + j; m++) {
-					for (int k = 0; k < dims_HoG[2]; k++) {
-						 feature.push_back(featArray_HoG[n +1][m + 1][k] / block_norm_factor);
-					}
-				}
-			} 
-			//concatnate vectors to form a single feature
-			for (int j = 0; j < dims[1]; j++) {
-				featArray[vec][j] = feature[j];
-			}
-			feature.clear();		
-			Hblocks++;
+		// memory for negative training set HoG feature flattened
+		dataSet_featArray = (double**)malloc(total_num_imgs * sizeof(double**));
+		for (int i = 0; i < total_num_imgs; ++i) {
+			dataSet_featArray[i] = (double*)malloc(features * sizeof(double));
 		}
-		vec++;
-		Vblocks++;
+
+		feat_dims[0] = total_num_imgs;
+		feat_dims[1] = features;
+
+		//randomly select 10 patches from the neg sample from each image
+		for (int i = 0; i < num_img; i++) {
+			num_img_patches = 0;
+			cout << i << ",";
+			cv::Mat src = imread("INRIAPerson/" + dataSet_img_paths[i]);
+			if (!src.empty()) {
+				while (num_img_patches < 10) {
+					int y_pos = rand() % (src.rows - patchHeight);
+					int x_pos = rand() % (src.cols - patchWidth);
+					img_patch = src(Rect(x_pos, y_pos, patchWidth, patchHeight));
+					double *** feat = computeHoG(img_patch, cell_size, dims);
+
+					//save to the dataset array bag
+					int y_cells = dims[0];
+					int x_cells = dims[1];
+					int z = dims[2];
+					int h = 0;
+					for (int i = 0; i < y_cells; i++) {
+						for (int j = 0; j < x_cells; j++) {
+							for (int n = 0; n < z; n++) {
+								dataSet_featArray[p][h++] = (feat[i][j][n]);
+							}
+						}
+					}
+					num_img_patches++;
+					p++;
+				}
+			}
+		}
 	}
-	cout << "Blocks V - H " << Vblocks - 1 << "  - " << Hblocks - 1 << " , ";
-	return featArray;
+	// Extract features of the pos sample dataset
+	else {
+		vector<int> FHoG_dims;
+		double ***FHoG;
+		//memory for dataset featureArray bag
+		int features = 16 * 8 * 32;
+		dataSet_featArray = (double**)malloc(num_img * sizeof(double**));
+		for (int i = 0; i < num_img; ++i) {
+			dataSet_featArray[i] = (double*)malloc(features * sizeof(double));
+		}
+		feat_dims[0] = num_img;
+		feat_dims[1] = features;
+
+		for (int k = 0; k < num_img; k++) {
+			cv::Mat img = imread("INRIAPerson/96X160H96/" + dataSet_img_paths[k]);
+			int h = 0;
+			if (!img.empty()) {
+				FHoG = computeHoG(img, cell_size, FHoG_dims);
+				int y_cells = FHoG_dims[0];
+				int x_cells = FHoG_dims[1];
+				int z = FHoG_dims[2];
+
+				//chop off the boundary features from the now 80 X 144 image to retain a 64 X 128 image patch
+				for (int i = CUTOFF; i < y_cells - CUTOFF; i++) {
+					for (int j = CUTOFF; j < x_cells - CUTOFF; j++) {
+						for (int n = 0; n < z; n++) {
+							dataSet_featArray[k][h++] = FHoG[i][j][n];
+						}
+					}
+				}
+
+			}//end if
+		}// end for
+		 // deallocate memory for FHOG
+		for (int i = 0; i < FHoG_dims[0]; i++) {
+			for (int j = 0; j < FHoG_dims[1]; j++) {
+				delete[] FHoG[i][j];
+			}
+			delete[] FHoG[i];
+		}
+		delete FHoG;
+	}// end else
 }
 
+// reads the dataset *.*ls files and returns paths to images as strings in an Array
+void get_dataSet(std::string dataSet_listFile_path, vector<std::string>& img_paths) {
+	img_paths = vector<string>();
+	ifstream img_lst;
+	string img_path;
+	img_lst.open(dataSet_listFile_path);
+	while (!img_lst.eof()) {
+		getline(img_lst, img_path);
+		img_paths.push_back(img_path);
+	}
+}
