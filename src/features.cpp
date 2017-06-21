@@ -97,7 +97,7 @@ void get_HoG_feat_trainSets(double **&dataSet_featArray, std::string dataSet_pat
 	feat_dims = std::vector<int>(2);
 	std::vector<std::string> dataSet_img_paths;
 	get_dataSet(dataSet_path, dataSet_img_paths);
-	int num_img = 100;//dataSet_img_paths.size();
+	int num_img = dataSet_img_paths.size();
 
 	if (pos_Set == false) {
 		int patchWidth = 80;

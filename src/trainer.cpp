@@ -49,9 +49,7 @@ cv::Mat generate_SVM_trainSet(double **pos_featArray, double** neg_featArray, st
 std::string train_classifier(double **pos_featArray, double** neg_featArray, std::vector<int> pos_dims, std::vector<int>neg_dims, std::string SVMModel_Name) {
 
 	Mat responses;
-
 	Mat data = generate_SVM_trainSet(pos_featArray, neg_featArray, pos_dims, neg_dims, responses);
-
 	cv::Mat img_sample(1, data.cols, CV_32FC1);
 	cv::Mat img_response(1, 1, CV_32FC1);
 
@@ -63,7 +61,7 @@ std::string train_classifier(double **pos_featArray, double** neg_featArray, std
 	params.svm_type = CvSVM::C_SVC;
 	params.kernel_type = CvSVM::LINEAR;
 	params.C = 1;
-	params.term_crit = TermCriteria(CV_TERMCRIT_EPS, 1000, 6e-10);
+	params.term_crit = TermCriteria(CV_TERMCRIT_EPS, 50, 0.000001);
 	// pick one image at a time from Mat Data and train the SVM with it and move on to the next till all are done
 	bool model;
 

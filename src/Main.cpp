@@ -46,7 +46,7 @@ int main() {
 	double ** pos_datasetFeatArray; 
 	double ** neg_datasetFeatArray;
 	cv::Mat responses;
-	string svmModel = "svm.xml3";
+	string svmModel = "svm2.xml";
 
 	//get_HoG_feat_trainSets(pos_datasetFeatArray, POSFILE, CELLSIZE, TEMPLATEWIDTH,TEMPLATEHEIGHT, pos_feat_dims, true);
 
