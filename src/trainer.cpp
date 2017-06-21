@@ -48,7 +48,7 @@ cv::Mat generate_SVM_trainSet(double **pos_featArray, double** neg_featArray, st
 
 std::string train_classifier(double **pos_featArray, double** neg_featArray, std::vector<int> pos_dims, std::vector<int>neg_dims, std::string SVMModel_Name) {
 
-	Mat responses = Mat();
+	Mat responses;
 
 	Mat data = generate_SVM_trainSet(pos_featArray, neg_featArray, pos_dims, neg_dims, responses);
 
@@ -63,7 +63,7 @@ std::string train_classifier(double **pos_featArray, double** neg_featArray, std
 	params.svm_type = CvSVM::C_SVC;
 	params.kernel_type = CvSVM::LINEAR;
 	params.C = 1;
-	params.term_crit = TermCriteria(CV_TERMCRIT_EPS, 50, 6e-10);
+	params.term_crit = TermCriteria(CV_TERMCRIT_EPS, 1000, 6e-10);
 	// pick one image at a time from Mat Data and train the SVM with it and move on to the next till all are done
 	bool model;
 
@@ -105,7 +105,7 @@ cv::Mat generate_SVM_predictDataSet(double **featArray, vector<int> feat_dims) {
 // calls the generate_predicDataset and predicts whether a pedestrian´is in or not.. this could be called inside the sliding window
 // to reduce the overload of storing all possible template moves.. but rather make a template move and decide immediately if person.
 // if person store the scale, x ,y values and continue scanning..
-void predict_pedestrian(double ** featArray, vector<int> feat_dims, std::string svm_path) {
+vector<std::vector<float>>  predict_pedestrian(double ** featArray, vector<int> feat_dims, std::string svm_path, int pos_x, int pos_y, int scale, bool &found_Person) {
 	CvSVM *newSVM = new CvSVM;
 	newSVM->load(svm_path.c_str());
 
@@ -113,12 +113,53 @@ void predict_pedestrian(double ** featArray, vector<int> feat_dims, std::string 
 	int patchFeatures = feat_dims[1];
 	cv::Mat predictSample(1, patchFeatures, CV_32FC1); // we test only one img patch at a time
 
-													   // in case many img patches are stored in featArray go through all of them ´but predict one at a time
+	vector<std::vector<float>> prediction = vector<std::vector<float>>(3);
+
+	// in case many img patches are stored in featArray go through all of them ´but predict one at a time
+	int p = 0;
 	for (int i = 0; i < feat_dims[0]; i++) {
 		for (int j = 0; j < feat_dims[1]; j++) {
-			predictSample = (cv::Mat_<float>(1, feat_dims[1]) << i, predicted.at<float>(i, j));
+			//predictSample = (cv::Mat_<float>(i, feat_dims[1]) << i, predicted.at<float>(i, j));
+			predictSample.at<float>(i, j) = predicted.at<float>(i, j);
 		}
-		float res = newSVM->predict(predictSample, true);
-		cout << res << endl;
+		float res = newSVM->predict(predictSample);
+		cout << res <<",";
+		// store results of prediction if person
+		if (res == 1) {
+			//prediction[p][0] = pos_x;
+			//prediction[p][1] = pos_y;
+			//prediction[p][2] = scale;
+			found_Person = true;
+		}
 	}
+	return prediction;
+}
+
+//to be used in scanning window fucntion  to tap each single scan.. USE WITH predict_pedestrain function
+double ** vectorize_32_HoG_feature(double ***featArray, int cell_size, int temp_Width, int temp_Height, vector<int>& vec_feat_dims) {
+
+	int x_cells = (temp_Width / cell_size);
+	int y_cells = (temp_Height / cell_size);
+	int num_dims = 32;
+	int features = y_cells * x_cells * num_dims;
+	vec_feat_dims = vector<int>(2);
+	vec_feat_dims[0] = 1;
+	vec_feat_dims[1] = features;
+
+	// memory for vectorized HoG feature
+	double ** vectorised_featArray = (double**)malloc(1 * sizeof(double**));
+	for (int i = 0; i < 1; ++i) {
+		vectorised_featArray[i] = (double*)malloc(features * sizeof(double));
+	}
+
+	//vectorize
+	int h = 0;
+	for (int i = 0; i < y_cells; i++) {
+		for (int j = 0; j < x_cells; j++) {
+			for (int n = 0; n < num_dims; n++) {
+				vectorised_featArray[0][h++] = featArray[i][j][n];
+			}
+		}
+	}
+	return vectorised_featArray;
 }

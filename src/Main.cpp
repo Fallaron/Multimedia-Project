@@ -27,12 +27,12 @@ using namespace std;
 using namespace cv;
 vector<double***> generatePositivTrainingData(String path);
 vector<double***> generateNegativTrainingsData(String path);
-void slideOverImage(Mat img);
+void slideOverImage(Mat img, string svmModel);
 double*** getHOGFeatureArrayOnScaleAt(int x, int y, vector<int> &dims, double *** featArray) throw (int);
 
 int main() {
-	Mat img = imread("lenna.png");
-	//slideOverImage(img);
+	Mat img = imread("pos_ped.jpg");
+	
 	//vector<double***> neg = generateNegativTrainingsData(NEGFILE);
 	//vector<double***> pos = generatePositivTrainingData(POSFILE);
 	//cout << "pos: " << pos.size() << endl << "neg: " << neg.size() << endl;
@@ -46,13 +46,16 @@ int main() {
 	double ** pos_datasetFeatArray; 
 	double ** neg_datasetFeatArray;
 	cv::Mat responses;
-	string svm = "svm.xml";
+	string svmModel = "svm.xml3";
 
-	get_HoG_feat_trainSets(pos_datasetFeatArray, POSFILE, CELLSIZE, TEMPLATEWIDTH,TEMPLATEHEIGHT, pos_feat_dims, true);
-	get_HoG_feat_trainSets(neg_datasetFeatArray, NEGFILE, CELLSIZE, TEMPLATEWIDTH, TEMPLATEHEIGHT, neg_feat_dims, false);
-	//train classifier and save SVM model
-	train_classifier(pos_datasetFeatArray, neg_datasetFeatArray, pos_feat_dims, neg_feat_dims, svm);
-	
+	//get_HoG_feat_trainSets(pos_datasetFeatArray, POSFILE, CELLSIZE, TEMPLATEWIDTH,TEMPLATEHEIGHT, pos_feat_dims, true);
+
+	//get_HoG_feat_trainSets(neg_datasetFeatArray, NEGFILE, CELLSIZE, TEMPLATEWIDTH, TEMPLATEHEIGHT, neg_feat_dims, false);
+
+	//train_classifier(pos_datasetFeatArray, neg_datasetFeatArray, pos_feat_dims, neg_feat_dims, svmModel);
+
+	slideOverImage(img, svmModel);
+
 	//getchar();
 	return 0;
 }
@@ -152,7 +155,7 @@ double*** getHOGFeatureArrayOnScaleAt(int x, int y, vector<int> &dims, double **
 }
 
 //Slides of an Image and aggregates HoG over Template Window
-void slideOverImage(Mat img) {
+void slideOverImage(Mat img, string svm_model_path) {
 	Mat src;
 	img.copyTo(src);
 	int imgheight = img.size().height;
@@ -163,6 +166,13 @@ void slideOverImage(Mat img) {
 	static double scalingfactor = pow(2, 1.0 / ALPHA);
 	while (img.cols > TEMPLATEWIDTH && img.rows > TEMPLATEHEIGHT) {
 		vector<int> dims;
+
+		//********* added **********
+		vector<int> vec_feat_dims;
+		double scale = pow(scalingfactor, stage);
+		bool person = false;
+		// **************************************
+
 		double *** featArray = computeHoG(img, CELLSIZE, dims);
 		cout << dims[0] << ":" << dims[1] << ":" << dims[2] << endl;
 		for (int y = CELLSIZE; y < imgheight-TEMPLATEHEIGHT; y+=CELLSIZE) {
@@ -170,6 +180,15 @@ void slideOverImage(Mat img) {
 				//x,y for HOGfeature in Template
 				try	{
 					double *** feat = getHOGFeatureArrayOnScaleAt(x, y, dims, featArray);
+
+					// Predict if pedestrian stands in at this position and scale
+					double ** vec_featArray = vectorize_32_HoG_feature(feat,CELLSIZE,TEMPLATEWIDTH,TEMPLATEHEIGHT,vec_feat_dims);
+					//generate_SVM_predictDataSet(vec_featArray, vec_feat_dims);
+					predict_pedestrian(vec_featArray, vec_feat_dims, svm_model_path, x, y, scale, person);
+					if (person == true) {
+						cout << "Found Pedestrain"<< endl;
+						person = false;
+					}
 				}
 				catch (int n) {
 					if (n == TEMPLATEFAILUREHEIGHT)

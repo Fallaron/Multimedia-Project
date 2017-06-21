@@ -94,10 +94,10 @@ bool is_detection_true(int prediction_bBox[], int img_index,int temp_Width, int 
 // dataSet_featArray is used to trains the classifier
 void get_HoG_feat_trainSets(double **&dataSet_featArray, std::string dataSet_path, const int cell_size, int temp_Width, int temp_Height, std::vector<int>& feat_dims, bool pos_Set) {
 	
-	feat_dims = vector<int>(2);
-	vector<string> dataSet_img_paths;
+	feat_dims = std::vector<int>(2);
+	std::vector<std::string> dataSet_img_paths;
 	get_dataSet(dataSet_path, dataSet_img_paths);
-	int num_img = 10;//dataSet_img_paths.size();
+	int num_img = 100;//dataSet_img_paths.size();
 
 	if (pos_Set == false) {
 		int patchWidth = 80;

@@ -127,7 +127,7 @@
   <ItemGroup>
     <ClInclude Include="src\features.h" />
     <ClInclude Include="src\hog\hog.h" />
-    <ClInclude Include="trainer.h" />
+    <ClInclude Include="src\trainer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -35,7 +35,7 @@
     <ClInclude Include="src\features.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="trainer.h">
+    <ClInclude Include="src\trainer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
