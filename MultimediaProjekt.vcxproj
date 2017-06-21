@@ -129,6 +129,12 @@
     <ClInclude Include="src\hog\hog.h" />
     <ClInclude Include="src\trainer.h" />
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="pos_ped.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="svm.xml3" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
