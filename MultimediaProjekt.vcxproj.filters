@@ -21,7 +21,10 @@
     <ClCompile Include="src\hog\hog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="features.cpp">
+    <ClCompile Include="src\features.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\trainer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -29,7 +32,10 @@
     <ClInclude Include="src\hog\hog.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="features.h">
+    <ClInclude Include="src\features.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="trainer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

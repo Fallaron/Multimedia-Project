@@ -1,10 +1,10 @@
 #include "features.h"
-#include "src\HOG\hog.h"
+#include "HOG\hog.h"
+#include "trainer.h"
 #include <ctime>
 
-#define DETECTORWIDTH 64
-#define DETECTORHEIGHT 128
 #define CUTOFF 1
+#define IMG_PATCH_NEG 10
 
 using namespace cv;
 using namespace std;
@@ -62,7 +62,7 @@ void  getBoundingBox(std::string annotationList, std::vector<std::vector<int>>& 
 	}
 }
 
-bool is_detection_true(int prediction_bBox[], int img_index, const std::vector<std::vector<int>> boundingBoxes) {
+bool is_detection_true(int prediction_bBox[], int img_index,int temp_Width, int temp_Height, const std::vector<std::vector<int>> boundingBoxes) {
 	// functions determines the true positive, false positive detections etc.. evaluation tool
 	//prediction_bBox[] entails int x, int y for locality and scale..
 
@@ -76,8 +76,8 @@ bool is_detection_true(int prediction_bBox[], int img_index, const std::vector<s
 	int pos_x = prediction_bBox[1] * scale;
 	int pos_y = prediction_bBox[2] * scale;
 	
-	int width = pos_x + DETECTORWIDTH * scale;
-	int height = pos_y + DETECTORHEIGHT * scale;
+	int width = pos_x + temp_Width * scale;
+	int height = pos_y + temp_Height * scale;
 
 	cv::Rect Predicted_bBox(pos_x, pos_y, width, height);
 	cv::Rect groundtruth_bBox(x1, y1, x2 - x1, y2 - y1);
@@ -92,11 +92,12 @@ bool is_detection_true(int prediction_bBox[], int img_index, const std::vector<s
 
 // set boolean to false and path to neg samples to extract neg sample features else extract pos features..
 // dataSet_featArray is used to trains the classifier
-void get_HoG_feat_trainSets(double **&dataSet_featArray, std::string dataSet_path, const int cell_size, std::vector<int>& feat_dims, bool pos_Set) {
+void get_HoG_feat_trainSets(double **&dataSet_featArray, std::string dataSet_path, const int cell_size, int temp_Width, int temp_Height, std::vector<int>& feat_dims, bool pos_Set) {
+	
 	feat_dims = vector<int>(2);
 	vector<string> dataSet_img_paths;
 	get_dataSet(dataSet_path, dataSet_img_paths);
-	int num_img = dataSet_img_paths.size();
+	int num_img = 10;//dataSet_img_paths.size();
 
 	if (pos_Set == false) {
 		int patchWidth = 80;
@@ -104,14 +105,13 @@ void get_HoG_feat_trainSets(double **&dataSet_featArray, std::string dataSet_pat
 		srand(time(NULL));
 		cv::Mat img_patch;
 		int num_img_patches;
-		int num_img = dataSet_img_paths.size();
+		//int num_img = dataSet_img_paths.size();
 		int p = 0;
 
-		vector<int> dims;
-		int y = (DETECTORWIDTH / cell_size);
-		int x = (DETECTORHEIGHT/ cell_size);
+		int x = (temp_Width / cell_size);
+		int y = (temp_Height/ cell_size);
 		int num_dims = 32;
-		int total_num_imgs = num_img * 10;
+		int total_num_imgs = num_img * IMG_PATCH_NEG;
 		int features = y * x * num_dims;
 
 		// memory for negative training set HoG feature flattened
@@ -124,26 +124,27 @@ void get_HoG_feat_trainSets(double **&dataSet_featArray, std::string dataSet_pat
 		feat_dims[1] = features;
 
 		//randomly select 10 patches from the neg sample from each image
+		double *** FHoG;
+		vector<int> FHoG_dims;
 		for (int i = 0; i < num_img; i++) {
 			num_img_patches = 0;
-			cout << i << ",";
-			cv::Mat src = imread("INRIAPerson/" + dataSet_img_paths[i]);
+			cv::Mat src = imread(dataSet_img_paths[i]);
 			if (!src.empty()) {
-				while (num_img_patches < 10) {
+				while (num_img_patches < IMG_PATCH_NEG) {
 					int y_pos = rand() % (src.rows - patchHeight);
 					int x_pos = rand() % (src.cols - patchWidth);
 					img_patch = src(Rect(x_pos, y_pos, patchWidth, patchHeight));
-					double *** feat = computeHoG(img_patch, cell_size, dims);
+					FHoG = computeHoG(img_patch, cell_size, FHoG_dims);
 
 					//save to the dataset array bag
-					int y_cells = dims[0];
-					int x_cells = dims[1];
-					int z = dims[2];
+					int y_cells = FHoG_dims[0];
+					int x_cells = FHoG_dims[1];
+					int z = FHoG_dims[2];
 					int h = 0;
 					for (int i = 0; i < y_cells; i++) {
 						for (int j = 0; j < x_cells; j++) {
 							for (int n = 0; n < z; n++) {
-								dataSet_featArray[p][h++] = (feat[i][j][n]);
+								dataSet_featArray[p][h++] = (FHoG[i][j][n]);
 							}
 						}
 					}
@@ -152,13 +153,23 @@ void get_HoG_feat_trainSets(double **&dataSet_featArray, std::string dataSet_pat
 				}
 			}
 		}
+		// deallocate memory for FHOG
+		for (int i = 0; i < FHoG_dims[0]; i++) {
+			for (int j = 0; j < FHoG_dims[1]; j++) {
+				free(FHoG[i][j]);
+			}
+			free(FHoG[i]);
+		}
+		free(FHoG);
 	}
 	// Extract features of the pos sample dataset
 	else {
 		vector<int> FHoG_dims;
 		double ***FHoG;
 		//memory for dataset featureArray bag
-		int features = 16 * 8 * 32;
+		int x = (temp_Width / cell_size);
+		int y = (temp_Height / cell_size);
+		int features = y * x * 32;
 		dataSet_featArray = (double**)malloc(num_img * sizeof(double**));
 		for (int i = 0; i < num_img; ++i) {
 			dataSet_featArray[i] = (double*)malloc(features * sizeof(double));
@@ -167,7 +178,7 @@ void get_HoG_feat_trainSets(double **&dataSet_featArray, std::string dataSet_pat
 		feat_dims[1] = features;
 
 		for (int k = 0; k < num_img; k++) {
-			cv::Mat img = imread("INRIAPerson/96X160H96/" + dataSet_img_paths[k]);
+			cv::Mat img = imread(dataSet_img_paths[k]);
 			int h = 0;
 			if (!img.empty()) {
 				FHoG = computeHoG(img, cell_size, FHoG_dims);
@@ -208,3 +219,5 @@ void get_dataSet(std::string dataSet_listFile_path, vector<std::string>& img_pat
 		img_paths.push_back(img_path);
 	}
 }
+
+

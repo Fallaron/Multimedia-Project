@@ -5,6 +5,8 @@
 #include <opencv2\highgui.hpp>
 #include <opencv2\ml.hpp>
 #include "HOG\hog.h"
+#include "features.h"
+#include "trainer.h"
 
 #define ALLOCATIONFAULT -666
 #define TEMPLATEFAILUREWIDTH -20
@@ -31,13 +33,28 @@ double*** getHOGFeatureArrayOnScaleAt(int x, int y, vector<int> &dims, double **
 int main() {
 	Mat img = imread("lenna.png");
 	//slideOverImage(img);
-	vector<double***> neg = generateNegativTrainingsData(NEGFILE);
-	vector<double***> pos = generatePositivTrainingData(POSFILE);
-	cout << "pos: " << pos.size() << endl << "neg: " << neg.size() << endl;
+	//vector<double***> neg = generateNegativTrainingsData(NEGFILE);
+	//vector<double***> pos = generatePositivTrainingData(POSFILE);
+	//cout << "pos: " << pos.size() << endl << "neg: " << neg.size() << endl;
 
-	Mat train = Mat(neg);
+	//Mat train = Mat(neg);
+	
+	// SVM Part Test works as expected
 
-	getchar();
+	vector<int> pos_feat_dims;
+	vector<int> neg_feat_dims;
+	double ** pos_datasetFeatArray; 
+	double ** neg_datasetFeatArray;
+	cv::Mat responses;
+	string svm = "svm.xml";
+
+	get_HoG_feat_trainSets(pos_datasetFeatArray, POSFILE, CELLSIZE, TEMPLATEWIDTH,TEMPLATEHEIGHT, pos_feat_dims, true);
+	get_HoG_feat_trainSets(neg_datasetFeatArray, NEGFILE, CELLSIZE, TEMPLATEWIDTH, TEMPLATEHEIGHT, neg_feat_dims, false);
+	//train classifier and save SVM model
+	train_classifier(pos_datasetFeatArray, neg_datasetFeatArray, pos_feat_dims, neg_feat_dims, svm);
+	
+	//getchar();
+	return 0;
 }
 
 

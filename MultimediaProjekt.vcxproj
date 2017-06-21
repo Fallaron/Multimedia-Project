@@ -119,13 +119,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="features.cpp" />
+    <ClCompile Include="src\features.cpp" />
     <ClCompile Include="src\hog\hog.cpp" />
     <ClCompile Include="src\Main.cpp" />
+    <ClCompile Include="src\trainer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="features.h" />
+    <ClInclude Include="src\features.h" />
     <ClInclude Include="src\hog\hog.h" />
+    <ClInclude Include="trainer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
