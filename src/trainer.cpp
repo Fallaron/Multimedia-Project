@@ -13,15 +13,19 @@ cv::Mat generate_SVM_trainSet(double **pos_featArray, double** neg_featArray, st
 	int features = pos_dims[1];	//sizeof(pos_featArray[1]) / pos_count;
 
 	cv::Mat trainDataSet = cv::Mat(img_total_count, features, CV_32FC1);
+	// label Dataset
+	responses = cv::Mat(img_total_count, 1, CV_32FC1);
 	int img = 0;
 	int neg = 0;
 	while (img < img_total_count) {
 		if (img < pos_count) {
+			responses.at<float>(img, 0) = 1;
 			for (int n = 0; n < features; n++) {
 				trainDataSet.at<float>(img, n) = pos_featArray[img][n];
 			}
 		}
 		else {
+			responses.at<float>(img, 0) = -1;
 			for (int n = 0; n < features; n++) {
 				trainDataSet.at<float>(img, n) = neg_featArray[neg][n];
 			}
@@ -29,24 +33,12 @@ cv::Mat generate_SVM_trainSet(double **pos_featArray, double** neg_featArray, st
 		}
 		img++;
 	}
-	// label Dataset
-	responses = cv::Mat(img_total_count, 1, CV_32FC1);
-
-	int label_count = 0;
-	while (label_count < img_total_count) {
-		if (label_count < pos_count) {
-			responses.at<float>(label_count, 0) = 1;
-			//label_count++;
-		}
-		else {
-			responses.at<float>(label_count, 0) = -1;
-		}
-		label_count++;
-	}
+	
+	
 	return trainDataSet;
 }
 
-std::string train_classifier(double **pos_featArray, double** neg_featArray, std::vector<int> pos_dims, std::vector<int>neg_dims, std::string SVMModel_Name) {
+std::string train_classifier(double **pos_featArray, double** neg_featArray, std::vector<int> pos_dims, std::vector<int>neg_dims, std::string SVMModel_Name, CvSVMParams params) {
 
 	Mat responses;
 	Mat data = generate_SVM_trainSet(pos_featArray, neg_featArray, pos_dims, neg_dims, responses);
@@ -57,11 +49,7 @@ std::string train_classifier(double **pos_featArray, double** neg_featArray, std
 	Mat varidx = Mat();
 	CvSVM SVM;
 
-	CvSVMParams params;
-	params.svm_type = CvSVM::C_SVC;
-	params.kernel_type = CvSVM::LINEAR;
-	params.C = 1;
-	params.term_crit = TermCriteria(CV_TERMCRIT_EPS, 50, 0.000001);
+	
 	// pick one image at a time from Mat Data and train the SVM with it and move on to the next till all are done
 	bool model;
 
@@ -81,6 +69,8 @@ std::string train_classifier(double **pos_featArray, double** neg_featArray, std
 	}
 	return SVMModel_Name;
 }
+
+
 
 // convert feature or features from the scanning window to dataset useable by SVM for prediction return a Mat
 cv::Mat generate_SVM_predictDataSet(double **featArray, vector<int> feat_dims) {
@@ -103,7 +93,7 @@ cv::Mat generate_SVM_predictDataSet(double **featArray, vector<int> feat_dims) {
 // calls the generate_predicDataset and predicts whether a pedestrian´is in or not.. this could be called inside the sliding window
 // to reduce the overload of storing all possible template moves.. but rather make a template move and decide immediately if person.
 // if person store the scale, x ,y values and continue scanning..
-vector<std::vector<float>>  predict_pedestrian(double ** featArray, vector<int> feat_dims, std::string svm_path, int pos_x, int pos_y, int scale, bool &found_Person) {
+float  predict_pedestrian(double ** featArray, vector<int> feat_dims, std::string svm_path, int pos_x, int pos_y, int scale, bool &found_Person) {
 	CvSVM *newSVM = new CvSVM;
 	newSVM->load(svm_path.c_str());
 
@@ -120,17 +110,21 @@ vector<std::vector<float>>  predict_pedestrian(double ** featArray, vector<int> 
 			//predictSample = (cv::Mat_<float>(i, feat_dims[1]) << i, predicted.at<float>(i, j));
 			predictSample.at<float>(i, j) = predicted.at<float>(i, j);
 		}
-		float res = newSVM->predict(predictSample);
-		cout << res <<",";
+		
+		// +++DEBUG+++
+		//cout << res <<",";
 		// store results of prediction if person
-		if (res == 1) {
-			//prediction[p][0] = pos_x;
-			//prediction[p][1] = pos_y;
-			//prediction[p][2] = scale;
-			found_Person = true;
-		}
+		
 	}
-	return prediction;
+	float res = newSVM->predict(predictSample);
+	float distanceDFVal = newSVM->predict(predictSample, true);
+	if (res == 1) {
+		//prediction[p][0] = pos_x;
+		//prediction[p][1] = pos_y;
+		//prediction[p][2] = scale;
+		found_Person = true;
+	}
+	return distanceDFVal;
 }
 
 //to be used in scanning window fucntion  to tap each single scan.. USE WITH predict_pedestrain function

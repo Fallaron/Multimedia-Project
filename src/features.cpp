@@ -2,6 +2,7 @@
 #include "HOG\hog.h"
 #include "trainer.h"
 #include <ctime>
+#include <iostream>
 
 #define CUTOFF 1
 #define IMG_PATCH_NEG 10
@@ -161,6 +162,7 @@ void get_HoG_feat_trainSets(double **&dataSet_featArray, std::string dataSet_pat
 			free(FHoG[i]);
 		}
 		free(FHoG);
+		cout << "GENERATED NEGATIVE TRAININGDATA" << endl;
 	}
 	// Extract features of the pos sample dataset
 	else {
@@ -205,7 +207,10 @@ void get_HoG_feat_trainSets(double **&dataSet_featArray, std::string dataSet_pat
 			free(FHoG[i]);
 		}
 		free(FHoG);
+		cout << "GENERATED POSITIVE TRAININGDATA" << endl;
 	}// end else
+
+
 }
 
 // reads the dataset *.*ls files and returns paths to images as strings in an Array

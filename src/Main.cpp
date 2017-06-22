@@ -8,6 +8,8 @@
 #include "features.h"
 #include "trainer.h"
 
+
+
 #define ALLOCATIONFAULT -666
 #define TEMPLATEFAILUREWIDTH -20
 #define TEMPLATEFAILUREHEIGHT -21
@@ -15,6 +17,7 @@
 #define TEMPLATEWIDTH 64
 #define TEMPLATEHEIGHT 128
 #define ALPHA 5
+#define DISVALUETRESHOLD -2.5
 
 #define POSFILE "pos.lst"
 #define NEGFILE "neg.lst"
@@ -46,14 +49,19 @@ int main() {
 	double ** pos_datasetFeatArray; 
 	double ** neg_datasetFeatArray;
 	cv::Mat responses;
-	string svmModel = "svm2.xml";
+	
 
 	//get_HoG_feat_trainSets(pos_datasetFeatArray, POSFILE, CELLSIZE, TEMPLATEWIDTH,TEMPLATEHEIGHT, pos_feat_dims, true);
 
 	//get_HoG_feat_trainSets(neg_datasetFeatArray, NEGFILE, CELLSIZE, TEMPLATEWIDTH, TEMPLATEHEIGHT, neg_feat_dims, false);
 
-	//train_classifier(pos_datasetFeatArray, neg_datasetFeatArray, pos_feat_dims, neg_feat_dims, svmModel);
-
+	CvSVMParams params;
+	params.svm_type = CvSVM::C_SVC;
+	params.kernel_type = CvSVM::LINEAR;
+	params.C = 1;
+	params.term_crit = TermCriteria(CV_TERMCRIT_EPS, 50, 0.000001);
+	//train_classifier(pos_datasetFeatArray, neg_datasetFeatArray, pos_feat_dims, neg_feat_dims, svmModel, params);
+	string svmModel = "svm2.xml";
 	slideOverImage(img, svmModel);
 
 	//getchar();
@@ -184,17 +192,20 @@ void slideOverImage(Mat img, string svm_model_path) {
 					// Predict if pedestrian stands in at this position and scale
 					double ** vec_featArray = vectorize_32_HoG_feature(feat,CELLSIZE,TEMPLATEWIDTH,TEMPLATEHEIGHT,vec_feat_dims);
 					//generate_SVM_predictDataSet(vec_featArray, vec_feat_dims);
-					predict_pedestrian(vec_featArray, vec_feat_dims, svm_model_path, x, y, scale, person);
-					if (person == true) {
-						cout << "Found Pedestrain"<< endl;
+					float disVal = predict_pedestrian(vec_featArray, vec_feat_dims, svm_model_path, x, y, scale, person);
+					if (person == true && disVal < DISVALUETRESHOLD) {
+						cout << "Found Pedestrain, distance "<< disVal << endl;
+						waitKey();
 						person = false;
 					}
 				}
 				catch (int n) {
+					/*              +++DEBUG+++
 					if (n == TEMPLATEFAILUREHEIGHT)
+						
 						cout << "HEIGHTERROR" << endl;
 					if (n == TEMPLATEFAILUREWIDTH)
-						cout << "WIDTHERROR" << endl;
+						cout << "WIDTHERROR" << endl;*/
 					continue;
 				}
 
@@ -218,10 +229,10 @@ void slideOverImage(Mat img, string svm_model_path) {
 					rectangle(copy, tl, br, green);
 
 					imshow("Template", copy);
-					waitKey();
+					waitKey(1);
 				}
 
-				//Do Something with Aggregated HoG Array
+				
 			}
 		}
 		//downsample
