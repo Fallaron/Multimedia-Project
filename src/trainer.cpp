@@ -140,9 +140,9 @@ double ** vectorize_32_HoG_feature(double ***featArray, int cell_size, int temp_
 
 	// memory for vectorized HoG feature
 	double ** vectorised_featArray = (double**)malloc(1 * sizeof(double**));
-	for (int i = 0; i < 1; ++i) {
-		vectorised_featArray[i] = (double*)malloc(features * sizeof(double));
-	}
+
+		vectorised_featArray[0] = (double*)malloc(features * sizeof(double));
+	
 
 	//vectorize
 	int h = 0;

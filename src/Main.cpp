@@ -16,8 +16,8 @@
 
 #define TEMPLATEWIDTH 64
 #define TEMPLATEHEIGHT 128
-#define ALPHA 5
-#define DISVALUETRESHOLD -2.5
+#define LAMDA 5
+#define DISVALUETRESHOLD -3.0
 
 #define POSFILE "pos.lst"
 #define NEGFILE "neg.lst"
@@ -32,6 +32,8 @@ vector<double***> generatePositivTrainingData(String path);
 vector<double***> generateNegativTrainingsData(String path);
 void slideOverImage(Mat img, string svmModel);
 double*** getHOGFeatureArrayOnScaleAt(int x, int y, vector<int> &dims, double *** featArray) throw (int);
+void freeHoGFeaturesOnScale(double*** feat);
+void freeVectorizedFeatureArray(double ** v_feat);
 
 int main() {
 	Mat img = imread("pos_ped.jpg");
@@ -165,14 +167,20 @@ double*** getHOGFeatureArrayOnScaleAt(int x, int y, vector<int> &dims, double **
 //Slides of an Image and aggregates HoG over Template Window
 void slideOverImage(Mat img, string svm_model_path) {
 	Mat src;
+	Mat pyrtemp;
+	bool show = false;
+	img.copyTo(pyrtemp);
 	img.copyTo(src);
 	int imgheight = img.size().height;
 	int imgwidth = img.size().width;
 	int stage = 0;
+	int gausStage = 0;
 	int templateh=TEMPLATEHEIGHT;
 	int templatew = TEMPLATEWIDTH;
-	static double scalingfactor = pow(2, 1.0 / ALPHA);
+	static double scalingfactor = pow(2, 1.0 / LAMDA);
 	while (img.cols > TEMPLATEWIDTH && img.rows > TEMPLATEHEIGHT) {
+		imshow("Template",src);
+		waitKey(1);
 		vector<int> dims;
 
 		//********* added **********
@@ -194,10 +202,12 @@ void slideOverImage(Mat img, string svm_model_path) {
 					//generate_SVM_predictDataSet(vec_featArray, vec_feat_dims);
 					float disVal = predict_pedestrian(vec_featArray, vec_feat_dims, svm_model_path, x, y, scale, person);
 					if (person == true && disVal < DISVALUETRESHOLD) {
-						cout << "Found Pedestrain, distance "<< disVal << endl;
-						waitKey();
+						cout << "Found Pedestrain, distance: "<< disVal << endl;
 						person = false;
+						show = true;
 					}
+					freeHoGFeaturesOnScale(feat);
+					freeVectorizedFeatureArray(vec_featArray);
 				}
 				catch (int n) {
 					/*              +++DEBUG+++
@@ -210,7 +220,7 @@ void slideOverImage(Mat img, string svm_model_path) {
 				}
 
 				//size of Template in Original Window, may be needed in Future.
-				if (true) {
+				if (show) {
 					double scale = pow(scalingfactor, stage);
 					Scalar green(0, 255, 0);
 
@@ -229,7 +239,8 @@ void slideOverImage(Mat img, string svm_model_path) {
 					rectangle(copy, tl, br, green);
 
 					imshow("Template", copy);
-					waitKey(1);
+					show = false;
+					waitKey();
 				}
 
 				
@@ -240,15 +251,43 @@ void slideOverImage(Mat img, string svm_model_path) {
 		//imshow("Test", img);
 		//waitKey();
 
-		int w = floor(img.cols / pow(2, 1.0 / ALPHA));
-		int h = floor(img.rows / pow(2, 1.0 / ALPHA));
+		int w = floor(img.cols / pow(2, 1.0 / LAMDA));
+		int h = floor(img.rows / pow(2, 1.0 / LAMDA));
 
-		//TODO Use Gaus for each octave
-		resize(img, img,Size(w,h));
+		
+		//Using GausPyramid for every Octave
+		if (++gausStage < LAMDA) {
+			resize(img, img, Size(w, h));
+		}
+		else {
+			pyrDown(pyrtemp, pyrtemp);
+			pyrtemp.copyTo(img);
+			gausStage = 0;
+		}
 		imgheight = img.size().height;
 		imgwidth = img.size().width;
 		stage++;
 
 		cout << "Width: " << img.size().width << " -- Height: " << img.size().height << endl;
 	}
+}
+
+
+void freeHoGFeaturesOnScale(double*** feat) {
+	int featH = TEMPLATEHEIGHT / CELLSIZE;
+	int featW = TEMPLATEWIDTH / CELLSIZE;
+	for (int i = 0; i < featH; i++) {
+		delete[] feat[i];
+	}
+	delete[] feat;
+	
+}
+
+void freeVectorizedFeatureArray(double ** v_feat) {
+	int x_cells = (TEMPLATEWIDTH / CELLSIZE);
+	int y_cells = (TEMPLATEHEIGHT / CELLSIZE);
+	int num_dims = 32;
+	int features = y_cells * x_cells * num_dims;
+	free(v_feat[0]);
+	free(v_feat);
 }
