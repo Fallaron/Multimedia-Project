@@ -28,12 +28,14 @@
 
 using namespace std;
 using namespace cv;
+
 vector<double***> generatePositivTrainingData(String path);
 vector<double***> generateNegativTrainingsData(String path);
 void slideOverImage(Mat img, string svmModel);
 double*** getHOGFeatureArrayOnScaleAt(int x, int y, vector<int> &dims, double *** featArray) throw (int);
 void freeHoGFeaturesOnScale(double*** feat);
 void freeVectorizedFeatureArray(double ** v_feat);
+void freeHog(vector<int> dims, double *** feature_Array);
 
 int main() {
 	Mat img = imread("pos_ped.jpg");
@@ -127,7 +129,7 @@ double*** getHOGFeatureArrayOnScaleAt(int x, int y, vector<int> &dims, double **
 	int hogposH = y/CELLSIZE -1;
 	int featW = TEMPLATEWIDTH / CELLSIZE;
 	int featH = TEMPLATEHEIGHT / CELLSIZE;
-	double *** features;
+	static double *** features;
 	features = new double**[featH];
 	if (features == NULL) {
 		delete[] features;
@@ -178,6 +180,10 @@ void slideOverImage(Mat img, string svm_model_path) {
 	int templateh=TEMPLATEHEIGHT;
 	int templatew = TEMPLATEWIDTH;
 	static double scalingfactor = pow(2, 1.0 / LAMDA);
+
+	CvSVM *newSVM = new CvSVM;
+	newSVM->load(svm_model_path.c_str());
+
 	while (img.cols > TEMPLATEWIDTH && img.rows > TEMPLATEHEIGHT) {
 		imshow("Template",src);
 		waitKey(1);
@@ -190,7 +196,7 @@ void slideOverImage(Mat img, string svm_model_path) {
 		// **************************************
 
 		double *** featArray = computeHoG(img, CELLSIZE, dims);
-		cout << dims[0] << ":" << dims[1] << ":" << dims[2] << endl;
+		//cout << dims[0] << ":" << dims[1] << ":" << dims[2] << endl;
 		for (int y = CELLSIZE; y < imgheight-TEMPLATEHEIGHT; y+=CELLSIZE) {
 			for (int x = CELLSIZE; x < imgwidth-TEMPLATEWIDTH; x+=CELLSIZE) {
 				//x,y for HOGfeature in Template
@@ -200,7 +206,7 @@ void slideOverImage(Mat img, string svm_model_path) {
 					// Predict if pedestrian stands in at this position and scale
 					double ** vec_featArray = vectorize_32_HoG_feature(feat,CELLSIZE,TEMPLATEWIDTH,TEMPLATEHEIGHT,vec_feat_dims);
 					//generate_SVM_predictDataSet(vec_featArray, vec_feat_dims);
-					float disVal = predict_pedestrian(vec_featArray, vec_feat_dims, svm_model_path, x, y, scale, person);
+					float disVal = predict_pedestrian(vec_featArray, vec_feat_dims, newSVM, x, y, scale, person);
 					if (person == true && disVal < DISVALUETRESHOLD) {
 						cout << "Found Pedestrain, distance: "<< disVal << endl;
 						person = false;
@@ -267,11 +273,22 @@ void slideOverImage(Mat img, string svm_model_path) {
 		imgheight = img.size().height;
 		imgwidth = img.size().width;
 		stage++;
-
+		
 		cout << "Width: " << img.size().width << " -- Height: " << img.size().height << endl;
+		freeHog(dims, featArray);
 	}
 }
 
+
+void freeHog(vector<int> dims, double *** feature_Array) {
+	for (int i = 0; i < dims[0];i++) {
+		for (int j = 0; j < dims[1]; j++) {
+			free(feature_Array[i][j]);
+		}
+		free(feature_Array[i]);
+	}
+	free(feature_Array);
+}
 
 void freeHoGFeaturesOnScale(double*** feat) {
 	int featH = TEMPLATEHEIGHT / CELLSIZE;
@@ -288,6 +305,6 @@ void freeVectorizedFeatureArray(double ** v_feat) {
 	int y_cells = (TEMPLATEHEIGHT / CELLSIZE);
 	int num_dims = 32;
 	int features = y_cells * x_cells * num_dims;
-	free(v_feat[0]);
-	free(v_feat);
+	delete(v_feat[0]);
+	delete(v_feat);
 }

@@ -93,9 +93,8 @@ cv::Mat generate_SVM_predictDataSet(double **featArray, vector<int> feat_dims) {
 // calls the generate_predicDataset and predicts whether a pedestrian´is in or not.. this could be called inside the sliding window
 // to reduce the overload of storing all possible template moves.. but rather make a template move and decide immediately if person.
 // if person store the scale, x ,y values and continue scanning..
-float  predict_pedestrian(double ** featArray, vector<int> feat_dims, std::string svm_path, int pos_x, int pos_y, int scale, bool &found_Person) {
-	CvSVM *newSVM = new CvSVM;
-	newSVM->load(svm_path.c_str());
+float  predict_pedestrian(double ** featArray, vector<int> feat_dims, CvSVM *newSVM, int pos_x, int pos_y, int scale, bool &found_Person) {
+	
 
 	cv::Mat predicted = generate_SVM_predictDataSet(featArray, feat_dims);
 	int patchFeatures = feat_dims[1];
