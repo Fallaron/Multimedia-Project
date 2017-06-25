@@ -32,7 +32,7 @@
 using namespace std;
 using namespace cv;
 
-static vector<double **> vFalsePositives;
+vector<double**> vFalsePositives;
 
 vector<double***> generatePositivTrainingData(String path);
 vector<double***> generateNegativTrainingsData(String path);
@@ -101,21 +101,21 @@ void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg
 	double ** true_neg_feat = (double**)calloc(vFalsePositives.size(), sizeof(double*));
 	for (int i = 0; i < vFalsePositives.size(); i++) {
 		true_neg_feat[i] = (double *)calloc(32, sizeof(double));
-		
 	}
 
+	double** templFeat;
 	for (int f = 0; f < vFalsePositives.size(); f++) {
-		double ** templFeat = vFalsePositives[f];
+		templFeat = vFalsePositives[f];
 		for (int n = 0; n < 32; n++) {
-			cout << n << endl;
 			true_neg_feat[f][n] = templFeat[0][n];
 		}
+		//TODO: Free double**
+		freeVectorizedFeatureArray(templFeat);
 	}
-	train_classifier(pos_feat_array, neg_feat_array, pos_dims, neg_dims, SVMPath, params,true_neg_feat,true_neg_dims);
-	cout << "Gatherd Hard Negatives!" << endl;
+	//TODO: Free vector<double**>
 
-	getchar();
-
+	//train_classifier(pos_feat_array, neg_feat_array, pos_dims, neg_dims, SVMPath, params,true_neg_feat,true_neg_dims);
+	cout << "Gathered Hard Negatives!" << endl;
 }
 
 vector<double***> generatePositivTrainingData(String path) {
@@ -230,9 +230,11 @@ void slideOverImage(Mat img, string svm_model_path, bool negTrain) {
 	newSVM->load(svm_model_path.c_str());
 
 	while (img.cols > TEMPLATEWIDTH && img.rows > TEMPLATEHEIGHT) {
-		if(!negTrain)
-			imshow("Template",src);
-		waitKey(1);
+		if (!negTrain) {
+			imshow("Template", src);
+			waitKey(1);
+		}
+
 		vector<int> dims;
 
 		//********* added **********
@@ -253,6 +255,7 @@ void slideOverImage(Mat img, string svm_model_path, bool negTrain) {
 					double ** vec_featArray = vectorize_32_HoG_feature(feat,CELLSIZE,TEMPLATEWIDTH,TEMPLATEHEIGHT,vec_feat_dims);
 					//generate_SVM_predictDataSet(vec_featArray, vec_feat_dims);
 					float disVal = predict_pedestrian(vec_featArray, vec_feat_dims, newSVM, x, y, scale, person);
+
 					if (person == true && disVal < DISVALUETRESHOLD) {
 						cout << "Found Pedestrain, distance: "<< disVal << endl;
 						person = false;
@@ -289,7 +292,7 @@ void slideOverImage(Mat img, string svm_model_path, bool negTrain) {
 						
 					}
 					freeHoGFeaturesOnScale(feat);
-					freeVectorizedFeatureArray(vec_featArray);
+					//freeVectorizedFeatureArray(vec_featArray);
 				}
 				catch (int n) {
 					/*              +++DEBUG+++
@@ -302,6 +305,8 @@ void slideOverImage(Mat img, string svm_model_path, bool negTrain) {
 				}
 			}
 		}
+
+
 		//downsample
 
 		//imshow("Test", img);
