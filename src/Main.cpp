@@ -42,7 +42,7 @@ double*** getHOGFeatureArrayOnScaleAt(int x, int y, vector<int> &dims, double **
 void freeHoGFeaturesOnScale(double*** feat);
 void freeVectorizedFeatureArray(double ** v_feat);
 void freeHog(vector<int> dims, double *** feature_Array);
-void useTestImages(String path, String SVMPath);
+void retrainModel(String path, String SVMPath);
 void addtoFalsePositives(double** T);
 
 int main() {
@@ -73,7 +73,7 @@ int main() {
 	params.term_crit = TermCriteria(CV_TERMCRIT_ITER, 10000, 0.00001);
 	//train_classifier(pos_datasetFeatArray, neg_datasetFeatArray, pos_feat_dims, neg_feat_dims, svmModel, params);
 	
-	useTestImages(POSTESTFILE,svmModel);
+	retrainModel(NEGFILE,svmModel);
 
 	
 	return 0;
@@ -86,7 +86,7 @@ void addtoFalsePositives(double** T) {
 	cout << "added, now:" << vFalsePositives.size() << endl;
 }
 
-void useTestImages(String path, String SVMPath) {
+void retrainModel(String path, String SVMPath) {
 	ifstream locations;
 	locations.open(path);
 	String file;
@@ -94,6 +94,7 @@ void useTestImages(String path, String SVMPath) {
 		Mat img = imread(file);
 		slideOverImage(img, SVMPath);
 	}
+
 }
 
 vector<double***> generatePositivTrainingData(String path) {
