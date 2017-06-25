@@ -72,7 +72,7 @@ int main() {
 	params.term_crit = TermCriteria(CV_TERMCRIT_ITER, 10, 0.00001);
 	train_classifier(pos_datasetFeatArray, neg_datasetFeatArray, pos_feat_dims, neg_feat_dims, svmModel, params);
 
-	retrainModel(params,NEGFILE, svmModel, pos_datasetFeatArray, pos_feat_dims, neg_datasetFeatArray, neg_feat_dims);
+	retrainModel(params, NEGFILE, svmModel, pos_datasetFeatArray, pos_feat_dims, neg_datasetFeatArray, neg_feat_dims);
 
 
 	return 0;
@@ -170,8 +170,8 @@ vector<double***> generateNegativTrainingsData(String path) {
 //scale 0 = just img;
 double*** getHOGFeatureArrayOnScaleAt(int x, int y, vector<int> &dims, double *** featArray) throw (int) {
 
-	int hogposW = x/CELLSIZE -1;
-	int hogposH = y/CELLSIZE -1;
+	int hogposW = x / CELLSIZE - 1;
+	int hogposH = y / CELLSIZE - 1;
 	int featW = TEMPLATEWIDTH / CELLSIZE;
 	int featH = TEMPLATEHEIGHT / CELLSIZE;
 	static double *** features;
@@ -193,8 +193,8 @@ double*** getHOGFeatureArrayOnScaleAt(int x, int y, vector<int> &dims, double **
 		//these will happen sometime, just continue with next window.
 		//it means that the Template window tries to use hogfeatures that lie beyond the hogfeatures.
 		for (int j = 0; j < featW; j++) {
-			if (dims[0] <= i + hogposH)  {
-				delete[] *features;
+			if (dims[0] <= i + hogposH) {
+				delete[] * features;
 				delete[] features;
 
 				throw TEMPLATEFAILUREHEIGHT;
@@ -222,7 +222,7 @@ void slideOverImage(Mat img, string svm_model_path, bool negTrain) {
 	int imgwidth = img.size().width;
 	int stage = 0;
 	int gausStage = 0;
-	int templateh=TEMPLATEHEIGHT;
+	int templateh = TEMPLATEHEIGHT;
 	int templatew = TEMPLATEWIDTH;
 	static double scalingfactor = pow(2, 1.0 / LAMDA);
 
@@ -245,19 +245,19 @@ void slideOverImage(Mat img, string svm_model_path, bool negTrain) {
 
 		double *** featArray = computeHoG(img, CELLSIZE, dims);
 		//cout << dims[0] << ":" << dims[1] << ":" << dims[2] << endl;
-		for (int y = CELLSIZE; y < imgheight-TEMPLATEHEIGHT; y+=CELLSIZE) {
-			for (int x = CELLSIZE; x < imgwidth-TEMPLATEWIDTH; x+=CELLSIZE) {
+		for (int y = CELLSIZE; y < imgheight - TEMPLATEHEIGHT; y += CELLSIZE) {
+			for (int x = CELLSIZE; x < imgwidth - TEMPLATEWIDTH; x += CELLSIZE) {
 				//x,y for HOGfeature in Template
-				try	{
+				try {
 					double *** feat = getHOGFeatureArrayOnScaleAt(x, y, dims, featArray);
 
 					// Predict if pedestrian stands in at this position and scale
-					double ** vec_featArray = vectorize_32_HoG_feature(feat,CELLSIZE,TEMPLATEWIDTH,TEMPLATEHEIGHT,vec_feat_dims);
+					double ** vec_featArray = vectorize_32_HoG_feature(feat, CELLSIZE, TEMPLATEWIDTH, TEMPLATEHEIGHT, vec_feat_dims);
 					//generate_SVM_predictDataSet(vec_featArray, vec_feat_dims);
 					float disVal = predict_pedestrian(vec_featArray, vec_feat_dims, newSVM, x, y, scale, person);
 
 					if (person == true && disVal < DISVALUETRESHOLD) {
-						cout << "Found Pedestrain, distance: "<< disVal << endl;
+						cout << "Found Pedestrain, distance: " << disVal << endl;
 						person = false;
 						show = true;
 					}
@@ -288,8 +288,8 @@ void slideOverImage(Mat img, string svm_model_path, bool negTrain) {
 						imshow("Template", copy);
 						show = false;
 						int k = waitKey(1);
-						
-						
+
+
 					}
 					freeHoGFeaturesOnScale(feat);
 					//freeVectorizedFeatureArray(vec_featArray);
@@ -297,7 +297,7 @@ void slideOverImage(Mat img, string svm_model_path, bool negTrain) {
 				catch (int n) {
 					/*              +++DEBUG+++
 					if (n == TEMPLATEFAILUREHEIGHT)
-						
+
 						cout << "HEIGHTERROR" << endl;
 					if (n == TEMPLATEFAILUREWIDTH)
 						cout << "WIDTHERROR" << endl;*/
@@ -333,7 +333,7 @@ void slideOverImage(Mat img, string svm_model_path, bool negTrain) {
 
 
 void freeHog(vector<int> dims, double *** feature_Array) {
-	for (int i = 0; i < dims[0];i++) {
+	for (int i = 0; i < dims[0]; i++) {
 		for (int j = 0; j < dims[1]; j++) {
 			free(feature_Array[i][j]);
 		}
@@ -349,7 +349,7 @@ void freeHoGFeaturesOnScale(double*** feat) {
 		delete[] feat[i];
 	}
 	delete[] feat;
-	
+
 }
 
 void freeVectorizedFeatureArray(double ** v_feat) {

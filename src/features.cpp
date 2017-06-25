@@ -63,7 +63,7 @@ void  getBoundingBox(std::string annotationList, std::vector<std::vector<int>>& 
 	}
 }
 
-bool is_detection_true(int prediction_bBox[], int img_index,int temp_Width, int temp_Height, const std::vector<std::vector<int>> boundingBoxes) {
+bool is_detection_true(int prediction_bBox[], int img_index, int temp_Width, int temp_Height, const std::vector<std::vector<int>> boundingBoxes) {
 	// functions determines the true positive, false positive detections etc.. evaluation tool
 	//prediction_bBox[] entails int x, int y for locality and scale..
 
@@ -76,7 +76,7 @@ bool is_detection_true(int prediction_bBox[], int img_index,int temp_Width, int 
 	double scale = prediction_bBox[0];
 	int pos_x = prediction_bBox[1] * scale;
 	int pos_y = prediction_bBox[2] * scale;
-	
+
 	int width = pos_x + temp_Width * scale;
 	int height = pos_y + temp_Height * scale;
 
@@ -94,7 +94,7 @@ bool is_detection_true(int prediction_bBox[], int img_index,int temp_Width, int 
 // set boolean to false and path to neg samples to extract neg sample features else extract pos features..
 // dataSet_featArray is used to trains the classifier
 void get_HoG_feat_trainSets(double **&dataSet_featArray, std::string dataSet_path, const int cell_size, int temp_Width, int temp_Height, std::vector<int>& feat_dims, bool pos_Set) {
-	
+
 	feat_dims = std::vector<int>(2);
 	std::vector<std::string> dataSet_img_paths;
 	get_dataSet(dataSet_path, dataSet_img_paths);
@@ -110,7 +110,7 @@ void get_HoG_feat_trainSets(double **&dataSet_featArray, std::string dataSet_pat
 		int p = 0;
 
 		int x = (temp_Width / cell_size);
-		int y = (temp_Height/ cell_size);
+		int y = (temp_Height / cell_size);
 		int num_dims = 32;
 		int total_num_imgs = num_img * IMG_PATCH_NEG;
 		int features = y * x * num_dims;

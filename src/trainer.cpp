@@ -6,12 +6,12 @@ using namespace cv;
 using namespace std;
 
 // generate SVM train vector set from HOG features both positive and negative..
-cv::Mat generate_SVM_trainSet(double **pos_featArray, double** neg_featArray,std::vector<int> pos_dims, std::vector<int>neg_dims, cv::Mat &responses, double ** trueNeg_featArray = NULL, std::vector<int> true_neg_dims = std::vector<int>(NULL)) {
+cv::Mat generate_SVM_trainSet(double **pos_featArray, double** neg_featArray, std::vector<int> pos_dims, std::vector<int>neg_dims, cv::Mat &responses, double ** trueNeg_featArray = NULL, std::vector<int> true_neg_dims = std::vector<int>(NULL)) {
 	int pos_count = pos_dims[0]; //sizeof(pos_featArray) / sizeof(pos_featArray[0]);
 	int neg_count = neg_dims[0]; //sizeof(neg_featArray) / sizeof(neg_featArray[0]);
 	int true_neg_count = 0;
-	if(!(true_neg_dims.empty()))
-		 true_neg_count = true_neg_dims[0];
+	if (!(true_neg_dims.empty()))
+		true_neg_count = true_neg_dims[0];
 	int img_total_count = pos_count + neg_count + true_neg_count;
 	int features = pos_dims[1];	//sizeof(pos_featArray[1]) / pos_count;
 
@@ -28,7 +28,7 @@ cv::Mat generate_SVM_trainSet(double **pos_featArray, double** neg_featArray,std
 				trainDataSet.at<float>(img, n) = pos_featArray[img][n];
 			}
 		}
-		else if(img < pos_count + neg_count ){
+		else if (img < pos_count + neg_count) {
 			responses.at<float>(img, 0) = -1;
 			for (int n = 0; n < features; n++) {
 				trainDataSet.at<float>(img, n) = neg_featArray[neg][n];
@@ -44,15 +44,15 @@ cv::Mat generate_SVM_trainSet(double **pos_featArray, double** neg_featArray,std
 		}
 		img++;
 	}
-	
-	
+
+
 	return trainDataSet;
 }
 
 std::string train_classifier(double **pos_featArray, double** neg_featArray, std::vector<int> pos_dims, std::vector<int>neg_dims, std::string SVMModel_Name, CvSVMParams params, double ** true_neg_feat_array, vector<int> true_neg_dims) {
 
 	Mat responses;
-	Mat data = generate_SVM_trainSet(pos_featArray, neg_featArray, pos_dims, neg_dims, responses, true_neg_feat_array,true_neg_dims);
+	Mat data = generate_SVM_trainSet(pos_featArray, neg_featArray, pos_dims, neg_dims, responses, true_neg_feat_array, true_neg_dims);
 	cv::Mat img_sample(1, data.cols, CV_32FC1);
 	cv::Mat img_response(1, 1, CV_32FC1);
 
@@ -60,7 +60,7 @@ std::string train_classifier(double **pos_featArray, double** neg_featArray, std
 	Mat varidx = Mat();
 	CvSVM SVM;
 
-	
+
 	// pick one image at a time from Mat Data and train the SVM with it and move on to the next till all are done
 	bool model;
 
@@ -106,7 +106,7 @@ cv::Mat generate_SVM_predictDataSet(double **featArray, vector<int> feat_dims) {
 // to reduce the overload of storing all possible template moves.. but rather make a template move and decide immediately if person.
 // if person store the scale, x ,y values and continue scanning..
 float  predict_pedestrian(double ** featArray, vector<int> feat_dims, CvSVM *newSVM, int pos_x, int pos_y, int scale, bool &found_Person) {
-	
+
 
 	cv::Mat predicted = generate_SVM_predictDataSet(featArray, feat_dims);
 	int patchFeatures = feat_dims[1];
@@ -121,11 +121,11 @@ float  predict_pedestrian(double ** featArray, vector<int> feat_dims, CvSVM *new
 			//predictSample = (cv::Mat_<float>(i, feat_dims[1]) << i, predicted.at<float>(i, j));
 			predictSample.at<float>(i, j) = predicted.at<float>(i, j);
 		}
-		
+
 		// +++DEBUG+++
 		//cout << res <<",";
 		// store results of prediction if person
-		
+
 	}
 	float res = newSVM->predict(predictSample);
 	float distanceDFVal = newSVM->predict(predictSample, true);
@@ -152,7 +152,7 @@ double ** vectorize_32_HoG_feature(double ***featArray, int cell_size, int temp_
 	// memory for vectorized HoG feature
 	double ** vectorised_featArray = (double**)malloc(1 * sizeof(double**));
 	vectorised_featArray[0] = (double*)malloc(features * sizeof(double));
-	
+
 	//vectorize
 	int h = 0;
 	for (int i = 0; i < y_cells; i++) {
