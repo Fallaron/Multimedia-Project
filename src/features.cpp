@@ -221,6 +221,8 @@ void get_dataSet(std::string dataSet_listFile_path, vector<std::string>& img_pat
 	img_lst.open(dataSet_listFile_path);
 	while (!img_lst.eof()) {
 		getline(img_lst, img_path);
+		if (img_path.empty())
+			continue;
 		img_paths.push_back(img_path);
 	}
 }

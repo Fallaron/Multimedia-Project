@@ -17,10 +17,14 @@
 #define TEMPLATEWIDTH 64
 #define TEMPLATEHEIGHT 128
 #define LAMDA 5
-#define DISVALUETRESHOLD -3.0
+#define DISVALUETRESHOLD -1
 
 #define POSFILE "pos.lst"
 #define NEGFILE "neg.lst"
+
+#define POSTESTFILE "Testpos.lst"
+#define NEGTESTFILE "Testneg.lst"
+#define ANNOTATIONTESTFILE "Testannotations.lst"
 
 //should be 2^n for better hog aggregation
 #define CELLSIZE 8
@@ -29,6 +33,8 @@
 using namespace std;
 using namespace cv;
 
+static vector<double **> vFalsePositives;
+
 vector<double***> generatePositivTrainingData(String path);
 vector<double***> generateNegativTrainingsData(String path);
 void slideOverImage(Mat img, string svmModel);
@@ -36,6 +42,8 @@ double*** getHOGFeatureArrayOnScaleAt(int x, int y, vector<int> &dims, double **
 void freeHoGFeaturesOnScale(double*** feat);
 void freeVectorizedFeatureArray(double ** v_feat);
 void freeHog(vector<int> dims, double *** feature_Array);
+void useTestImages(String path, String SVMPath);
+void addtoFalsePositives(double** T);
 
 int main() {
 	Mat img = imread("pos_ped.jpg");
@@ -53,25 +61,40 @@ int main() {
 	double ** pos_datasetFeatArray; 
 	double ** neg_datasetFeatArray;
 	cv::Mat responses;
-	
+	string svmModel = "svm10000Linear.xml";
 
 	//get_HoG_feat_trainSets(pos_datasetFeatArray, POSFILE, CELLSIZE, TEMPLATEWIDTH,TEMPLATEHEIGHT, pos_feat_dims, true);
-
+	//cout << "pos: " << pos_feat_dims[0] << endl;
 	//get_HoG_feat_trainSets(neg_datasetFeatArray, NEGFILE, CELLSIZE, TEMPLATEWIDTH, TEMPLATEHEIGHT, neg_feat_dims, false);
-
+	//cout << "neg: " << neg_feat_dims[0] << endl;
 	CvSVMParams params;
 	params.svm_type = CvSVM::C_SVC;
 	params.kernel_type = CvSVM::LINEAR;
-	params.C = 1;
-	params.term_crit = TermCriteria(CV_TERMCRIT_EPS, 50, 0.000001);
+	params.term_crit = TermCriteria(CV_TERMCRIT_ITER, 10000, 0.00001);
 	//train_classifier(pos_datasetFeatArray, neg_datasetFeatArray, pos_feat_dims, neg_feat_dims, svmModel, params);
-	string svmModel = "svm2.xml";
-	slideOverImage(img, svmModel);
+	
+	useTestImages(POSTESTFILE,svmModel);
 
-	//getchar();
+	
 	return 0;
+	getchar();
 }
 
+
+void addtoFalsePositives(double** T) {
+	vFalsePositives.push_back(T);
+	cout << "added, now:" << vFalsePositives.size() << endl;
+}
+
+void useTestImages(String path, String SVMPath) {
+	ifstream locations;
+	locations.open(path);
+	String file;
+	while (getline(locations, file)) {
+		Mat img = imread(file);
+		slideOverImage(img, SVMPath);
+	}
+}
 
 vector<double***> generatePositivTrainingData(String path) {
 	ifstream locations;
@@ -212,6 +235,33 @@ void slideOverImage(Mat img, string svm_model_path) {
 						person = false;
 						show = true;
 					}
+					//size of Template in Original Window, may be needed in Future.
+					if (show) {
+						double scale = pow(scalingfactor, stage);
+						Scalar green(0, 255, 0);
+
+						int templatew = TEMPLATEWIDTH;
+						templatew *= scale;
+						int templateh = TEMPLATEHEIGHT;
+						templateh *= scale;
+						int newx = x* scale;
+						int newy = y* scale;
+						Mat copy;
+						src.copyTo(copy);
+						Point tl(newx, newy);
+						Point br(newx + templatew, newy + templateh);
+						//Point bl(newx + templatew,newy);
+						//Point tr(newx, newy + templateh);
+						rectangle(copy, tl, br, green);
+
+						imshow("Template", copy);
+						show = false;
+						int k = waitKey();
+						if (k == 110) {  //n
+							addtoFalsePositives(vec_featArray);
+						}
+						
+					}
 					freeHoGFeaturesOnScale(feat);
 					freeVectorizedFeatureArray(vec_featArray);
 				}
@@ -224,32 +274,6 @@ void slideOverImage(Mat img, string svm_model_path) {
 						cout << "WIDTHERROR" << endl;*/
 					continue;
 				}
-
-				//size of Template in Original Window, may be needed in Future.
-				if (show) {
-					double scale = pow(scalingfactor, stage);
-					Scalar green(0, 255, 0);
-
-					int templatew = TEMPLATEWIDTH;
-					templatew *= scale;
-					int templateh = TEMPLATEHEIGHT;
-					templateh *= scale;
-					int newx = x* scale;
-					int newy = y* scale;
-					Mat copy;
-					src.copyTo(copy);
-					Point tl(newx, newy);
-					Point br(newx + templatew, newy + templateh);
-					//Point bl(newx + templatew,newy);
-					//Point tr(newx, newy + templateh);
-					rectangle(copy, tl, br, green);
-
-					imshow("Template", copy);
-					show = false;
-					waitKey();
-				}
-
-				
 			}
 		}
 		//downsample
@@ -273,8 +297,8 @@ void slideOverImage(Mat img, string svm_model_path) {
 		imgheight = img.size().height;
 		imgwidth = img.size().width;
 		stage++;
-		
-		cout << "Width: " << img.size().width << " -- Height: " << img.size().height << endl;
+		// +++ DEBUG +++
+		//cout << "Width: " << img.size().width << " -- Height: " << img.size().height << endl;
 		freeHog(dims, featArray);
 	}
 }

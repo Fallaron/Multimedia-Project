@@ -67,6 +67,7 @@ std::string train_classifier(double **pos_featArray, double** neg_featArray, std
 	if (model) {
 		SVM.save(SVMModel_Name.c_str());
 	}
+	cout << "SVM successfully trained.";
 	return SVMModel_Name;
 }
 
