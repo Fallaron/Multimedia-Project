@@ -17,8 +17,7 @@
 #define TEMPLATEWIDTH 64
 #define TEMPLATEHEIGHT 128
 #define LAMDA 5
-#define DISVALUETRESHOLD -1
-
+#define DISVALUETRESHOLD 0
 #define POSFILE "pos.lst"
 #define NEGFILE "neg.lst"
 
@@ -37,45 +36,45 @@ static vector<double **> vFalsePositives;
 
 vector<double***> generatePositivTrainingData(String path);
 vector<double***> generateNegativTrainingsData(String path);
-void slideOverImage(Mat img, string svmModel);
+void slideOverImage(Mat img, string svmModel, bool negTrain);
 double*** getHOGFeatureArrayOnScaleAt(int x, int y, vector<int> &dims, double *** featArray) throw (int);
 void freeHoGFeaturesOnScale(double*** feat);
 void freeVectorizedFeatureArray(double ** v_feat);
 void freeHog(vector<int> dims, double *** feature_Array);
-void retrainModel(String path, String SVMPath);
+void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg_feat_array, vector<int> neg_dims, double ** pos_feat_array, vector<int> pos_dims);
 void addtoFalsePositives(double** T);
 
 int main() {
 	Mat img = imread("pos_ped.jpg");
-	
+
 	//vector<double***> neg = generateNegativTrainingsData(NEGFILE);
 	//vector<double***> pos = generatePositivTrainingData(POSFILE);
 	//cout << "pos: " << pos.size() << endl << "neg: " << neg.size() << endl;
 
 	//Mat train = Mat(neg);
-	
+
 	// SVM Part Test works as expected
 
 	vector<int> pos_feat_dims;
 	vector<int> neg_feat_dims;
-	double ** pos_datasetFeatArray; 
+	double ** pos_datasetFeatArray;
 	double ** neg_datasetFeatArray;
 	cv::Mat responses;
-	string svmModel = "svm10000Linear.xml";
+	string svmModel = "svmRetrained.xml";
 
-	//get_HoG_feat_trainSets(pos_datasetFeatArray, POSFILE, CELLSIZE, TEMPLATEWIDTH,TEMPLATEHEIGHT, pos_feat_dims, true);
-	//cout << "pos: " << pos_feat_dims[0] << endl;
-	//get_HoG_feat_trainSets(neg_datasetFeatArray, NEGFILE, CELLSIZE, TEMPLATEWIDTH, TEMPLATEHEIGHT, neg_feat_dims, false);
-	//cout << "neg: " << neg_feat_dims[0] << endl;
+	get_HoG_feat_trainSets(pos_datasetFeatArray, POSFILE, CELLSIZE, TEMPLATEWIDTH, TEMPLATEHEIGHT, pos_feat_dims, true);
+	cout << "pos: " << pos_feat_dims[0] << endl;
+	get_HoG_feat_trainSets(neg_datasetFeatArray, NEGFILE, CELLSIZE, TEMPLATEWIDTH, TEMPLATEHEIGHT, neg_feat_dims, false);
+	cout << "neg: " << neg_feat_dims[0] << endl;
 	CvSVMParams params;
 	params.svm_type = CvSVM::C_SVC;
 	params.kernel_type = CvSVM::LINEAR;
-	params.term_crit = TermCriteria(CV_TERMCRIT_ITER, 10000, 0.00001);
-	//train_classifier(pos_datasetFeatArray, neg_datasetFeatArray, pos_feat_dims, neg_feat_dims, svmModel, params);
-	
-	retrainModel(NEGFILE,svmModel);
+	params.term_crit = TermCriteria(CV_TERMCRIT_ITER, 10, 0.00001);
+	train_classifier(pos_datasetFeatArray, neg_datasetFeatArray, pos_feat_dims, neg_feat_dims, svmModel, params);
 
-	
+	retrainModel(params,NEGFILE, svmModel, pos_datasetFeatArray, pos_feat_dims, neg_datasetFeatArray, neg_feat_dims);
+
+
 	return 0;
 	getchar();
 }
@@ -86,14 +85,36 @@ void addtoFalsePositives(double** T) {
 	cout << "added, now:" << vFalsePositives.size() << endl;
 }
 
-void retrainModel(String path, String SVMPath) {
+void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg_feat_array, vector<int> neg_dims, double ** pos_feat_array, vector<int> pos_dims) {
+	cout << "RETRAINING!" << endl;
 	ifstream locations;
 	locations.open(path);
 	String file;
+	vector<int> true_neg_dims;
+	int featH = TEMPLATEHEIGHT / CELLSIZE;
+	int featW = TEMPLATEWIDTH / CELLSIZE;
 	while (getline(locations, file)) {
 		Mat img = imread(file);
-		slideOverImage(img, SVMPath);
+		slideOverImage(img, SVMPath, true);
 	}
+	true_neg_dims.push_back(vFalsePositives.size());
+	double ** true_neg_feat = (double**)calloc(vFalsePositives.size(), sizeof(double*));
+	for (int i = 0; i < vFalsePositives.size(); i++) {
+		true_neg_feat[i] = (double *)calloc(32, sizeof(double));
+		
+	}
+
+	for (int f = 0; f < vFalsePositives.size(); f++) {
+		double ** templFeat = vFalsePositives[f];
+		for (int n = 0; n < 32; n++) {
+			cout << n << endl;
+			true_neg_feat[f][n] = templFeat[0][n];
+		}
+	}
+	train_classifier(pos_feat_array, neg_feat_array, pos_dims, neg_dims, SVMPath, params,true_neg_feat,true_neg_dims);
+	cout << "Gatherd Hard Negatives!" << endl;
+
+	getchar();
 
 }
 
@@ -191,7 +212,7 @@ double*** getHOGFeatureArrayOnScaleAt(int x, int y, vector<int> &dims, double **
 }
 
 //Slides of an Image and aggregates HoG over Template Window
-void slideOverImage(Mat img, string svm_model_path) {
+void slideOverImage(Mat img, string svm_model_path, bool negTrain) {
 	Mat src;
 	Mat pyrtemp;
 	bool show = false;
@@ -209,7 +230,8 @@ void slideOverImage(Mat img, string svm_model_path) {
 	newSVM->load(svm_model_path.c_str());
 
 	while (img.cols > TEMPLATEWIDTH && img.rows > TEMPLATEHEIGHT) {
-		imshow("Template",src);
+		if(!negTrain)
+			imshow("Template",src);
 		waitKey(1);
 		vector<int> dims;
 
@@ -237,7 +259,12 @@ void slideOverImage(Mat img, string svm_model_path) {
 						show = true;
 					}
 					//size of Template in Original Window, may be needed in Future.
-					if (show) {
+					//show means he found something.
+					if (negTrain&& show) {  //n
+						addtoFalsePositives(vec_featArray);
+						show = false;
+					}
+					if (show && !negTrain) {
 						double scale = pow(scalingfactor, stage);
 						Scalar green(0, 255, 0);
 
@@ -257,10 +284,8 @@ void slideOverImage(Mat img, string svm_model_path) {
 
 						imshow("Template", copy);
 						show = false;
-						int k = waitKey();
-						if (k == 110) {  //n
-							addtoFalsePositives(vec_featArray);
-						}
+						int k = waitKey(1);
+						
 						
 					}
 					freeHoGFeaturesOnScale(feat);
