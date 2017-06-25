@@ -10,11 +10,15 @@ cv::Mat generate_SVM_trainSet(double **pos_featArray, double** neg_featArray, st
 	int pos_count = pos_dims[0]; //sizeof(pos_featArray) / sizeof(pos_featArray[0]);
 	int neg_count = neg_dims[0]; //sizeof(neg_featArray) / sizeof(neg_featArray[0]);
 	int true_neg_count = 0;
+	int trueNeg_features = 0;
 	if (!(true_neg_dims.empty()))
 		true_neg_count = true_neg_dims[0];
+	if(true_neg_count != 0)
+		//TODO: needed?
+		trueNeg_features = true_neg_dims[1];
 	int img_total_count = pos_count + neg_count + true_neg_count;
 	int features = pos_dims[1];	//sizeof(pos_featArray[1]) / pos_count;
-
+	
 	cv::Mat trainDataSet = cv::Mat(img_total_count, features, CV_32FC1);
 	// label Dataset
 	responses = cv::Mat(img_total_count, 1, CV_32FC1);
@@ -37,7 +41,7 @@ cv::Mat generate_SVM_trainSet(double **pos_featArray, double** neg_featArray, st
 		}
 		else {
 			responses.at<float>(img, 0) = -1;
-			for (int n = 0; n < features; n++) {
+			for (int n = 0; n < trueNeg_features; n++) {
 				trainDataSet.at<float>(img, n) = trueNeg_featArray[true_neg][n];
 			}
 			true_neg++;
@@ -78,7 +82,7 @@ std::string train_classifier(double **pos_featArray, double** neg_featArray, std
 	if (model) {
 		SVM.save(SVMModel_Name.c_str());
 	}
-	cout << "SVM successfully trained." << endl;
+	cout << "SVM "<< SVMModel_Name << " successfully trained." << endl;
 	return SVMModel_Name;
 }
 

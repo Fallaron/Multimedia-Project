@@ -17,7 +17,7 @@
 #define TEMPLATEWIDTH 64
 #define TEMPLATEHEIGHT 128
 #define LAMDA 5
-#define DISVALUETRESHOLD 0
+#define DISVALUETRESHOLD -1.3
 #define POSFILE "pos.lst"
 #define NEGFILE "neg.lst"
 
@@ -42,6 +42,7 @@ void freeHoGFeaturesOnScale(double*** feat);
 void freeVectorizedFeatureArray(double ** v_feat);
 void freeHog(vector<int> dims, double *** feature_Array);
 void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg_feat_array, vector<int> neg_dims, double ** pos_feat_array, vector<int> pos_dims);
+void useTestImages(String path, String SVMPath);
 void addtoFalsePositives(double** T);
 
 int main() {
@@ -69,14 +70,15 @@ int main() {
 	CvSVMParams params;
 	params.svm_type = CvSVM::C_SVC;
 	params.kernel_type = CvSVM::LINEAR;
-	params.term_crit = TermCriteria(CV_TERMCRIT_ITER, 10, 0.00001);
+	params.term_crit = TermCriteria(CV_TERMCRIT_ITER, 10000, 0.00001);
 	train_classifier(pos_datasetFeatArray, neg_datasetFeatArray, pos_feat_dims, neg_feat_dims, svmModel, params);
 
 	retrainModel(params, NEGFILE, svmModel, pos_datasetFeatArray, pos_feat_dims, neg_datasetFeatArray, neg_feat_dims);
 
+	useTestImages(POSTESTFILE, svmModel);
 
-	return 0;
 	getchar();
+	return 0;
 }
 
 
@@ -110,12 +112,22 @@ void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg
 			true_neg_feat[f][n] = templFeat[0][n];
 		}
 		//TODO: Free double**
-		freeVectorizedFeatureArray(templFeat);
+		//freeVectorizedFeatureArray(templFeat);
 	}
 	//TODO: Free vector<double**>
 
-	//train_classifier(pos_feat_array, neg_feat_array, pos_dims, neg_dims, SVMPath, params,true_neg_feat,true_neg_dims);
+	train_classifier(pos_feat_array, neg_feat_array, pos_dims, neg_dims, SVMPath, params,true_neg_feat,true_neg_dims);
 	cout << "Gathered Hard Negatives!" << endl;
+}
+
+void useTestImages(String path, String SVMPath) {
+	ifstream locations;
+	locations.open(path);
+	String file;
+	while (getline(locations, file)) {
+		Mat img = imread(file);
+		slideOverImage(img, SVMPath, false);
+	}
 }
 
 vector<double***> generatePositivTrainingData(String path) {
@@ -287,9 +299,7 @@ void slideOverImage(Mat img, string svm_model_path, bool negTrain) {
 
 						imshow("Template", copy);
 						show = false;
-						int k = waitKey(1);
-
-
+						waitKey(1);
 					}
 					freeHoGFeaturesOnScale(feat);
 					//freeVectorizedFeatureArray(vec_featArray);
