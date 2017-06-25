@@ -281,13 +281,10 @@ void slideOverImage(Mat img, string svm_model_path) {
 		//imshow("Test", img);
 		//waitKey();
 
-		int w = floor(img.cols / pow(2, 1.0 / LAMDA));
-		int h = floor(img.rows / pow(2, 1.0 / LAMDA));
-
-		
 		//Using GausPyramid for every Octave
 		if (++gausStage < LAMDA) {
-			resize(img, img, Size(w, h));
+			Size imgSize(floor(img.cols / scalingfactor), floor(img.rows / scalingfactor));
+			resize(img, img, imgSize);
 		}
 		else {
 			pyrDown(pyrtemp, pyrtemp);
