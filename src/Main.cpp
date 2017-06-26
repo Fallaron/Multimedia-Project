@@ -54,7 +54,13 @@ int main() {
 
 	//Mat train = Mat(neg);
 
-	// SVM Part Test works as expected
+	std::vector<std::vector<int>> boundingBoxes;
+	getBoundingBox(ANNOTATIONTESTFILE, boundingBoxes);
+	for (const auto& bBox : boundingBoxes) {
+		for (const auto val : bBox)
+			cout << val << ",";
+		cout << endl;
+	}
 
 	vector<int> pos_feat_dims;
 	vector<int> neg_feat_dims;
@@ -75,8 +81,8 @@ int main() {
 
 	retrainModel(params, NEGFILE, svmModel, pos_datasetFeatArray, pos_feat_dims, neg_datasetFeatArray, neg_feat_dims);
 
-	useTestImages(POSTESTFILE, svmModel);
-
+	useTestImages(POSTESTFILE, svmModel); 
+	
 	getchar();
 	return 0;
 }

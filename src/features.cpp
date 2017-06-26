@@ -3,6 +3,7 @@
 #include "trainer.h"
 #include <ctime>
 #include <iostream>
+#include <regex>
 
 #define CUTOFF 1
 #define IMG_PATCH_NEG 10
@@ -17,7 +18,8 @@ void  getBoundingBox(std::string annotationList, std::vector<std::vector<int>>& 
 	ifstream annotationTxtFile;
 	char c;
 	bool store = false;
-	int boundingBoxLineNum[2] = { 17, 24 };
+	string sub = "Bounding box.*";
+	std::regex rx(sub);
 	std::vector<int> boundingBoxValues;
 	boundingBoxes = std::vector<std::vector<int>>();
 
@@ -32,11 +34,8 @@ void  getBoundingBox(std::string annotationList, std::vector<std::vector<int>>& 
 			while (!annotationTxtFile.eof())
 			{
 				// get to a specific line with boundingBox info from annotation text file
-				int count = 0;
 				while (getline(annotationTxtFile, line)) {
-					if (count == boundingBoxLineNum[0] || count == boundingBoxLineNum[1]) {
-						// look for bounding box data from this specific line
-
+					if (std::regex_match(line, rx)) {
 						for (int j = 69; j < line.size(); ++j) {
 							c = line[j];
 							while (j < line.size() && isdigit(c)) {
@@ -50,9 +49,7 @@ void  getBoundingBox(std::string annotationList, std::vector<std::vector<int>>& 
 								value.clear();
 							}
 						}
-
 					}
-					count++;
 				}
 				// store bounding box values for a specific image
 				if (!boundingBoxValues.empty()) {
@@ -230,4 +227,47 @@ void get_dataSet(std::string dataSet_listFile_path, vector<std::string>& img_pat
 	}
 }
 
+// suppress detected bBoxes (remain with a single box if no. persons is 1 else 2 if two persons etc)
+//for a all scales and add results to final bBoxes to be evaluated by is_Detection_ok
+void non_Max_Suppression(std::vector<std::vector<int>>feat_BBox) {
+	std::vector<std::vector<int>> final_BBox;
+	// sort bboxes according to distance from Hyperplane
+	int dims = sizeof(final_BBox[0][0]);
+	int boxes = sizeof(final_BBox) / dims;
+	int sel = 0;
+	double overlap;
+
+	vector<float> hyp_Val;
+	int b = 0, i = 0;
+	for (auto &b : final_BBox) {
+		hyp_Val.push_back(b[i++]); // copy hyperplanes values;
+	}
+	// use swapping to sort arrays basing on the hyperplane value(selection sort)
+	/*for (int i = 0; i < boxes; i++) {
+		
+	}
+
+	double scale = current_bBox[1];
+	int pos_x = current_bBox[1] * scale;
+	int pos_y = current_bBox[2] * scale;
+
+	int width = pos_x + temp_Width * scale;
+	int height = pos_y + temp_Height * scale;
+
+	cv::current_bBox(pos_x, pos_y, width, height);
+	cv::Rect Test_bBox(x1, y1, x2 - x1, y2 - y1);
+	cv::Rect intersect_rect = current_bBox & groundtruth_bBox;
+	cv::Rect union_rect = current_bBox | groundtruth_bBox;
+
+	soverlap = intersect_rect.area() / union_rect.area(); */
+
+	// copy  specific choosen to final
+	if (overlap > 0.2) {
+		for (int i = 0; i < boxes; i++) {
+			for (int j = 0; j < dims; j++)
+				final_BBox[i][j] = feat_BBox[sel][j]; // add selected bBox stored at index sel
+		}
+	}
+		
+}
 
