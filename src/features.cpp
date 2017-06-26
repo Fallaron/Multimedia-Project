@@ -15,9 +15,9 @@ void  getBoundingBox(std::string annotationList, std::vector<std::vector<int>>& 
 	string annotationPath, line, value;
 	ifstream annotationlst;
 	ifstream annotationTxtFile;
-	int boundingBoxLineNum = 17;
 	char c;
 	bool store = false;
+	int boundingBoxLineNum[2] = { 17, 24 };
 	std::vector<int> boundingBoxValues;
 	boundingBoxes = std::vector<std::vector<int>>();
 
@@ -34,7 +34,7 @@ void  getBoundingBox(std::string annotationList, std::vector<std::vector<int>>& 
 				// get to a specific line with boundingBox info from annotation text file
 				int count = 0;
 				while (getline(annotationTxtFile, line)) {
-					if (count == boundingBoxLineNum) {
+					if (count == boundingBoxLineNum[0] || count == boundingBoxLineNum[1]) {
 						// look for bounding box data from this specific line
 
 						for (int j = 69; j < line.size(); ++j) {
@@ -50,11 +50,14 @@ void  getBoundingBox(std::string annotationList, std::vector<std::vector<int>>& 
 								value.clear();
 							}
 						}
-						// store bounding box values for a specific row or image
-						boundingBoxes.push_back(boundingBoxValues);
-						boundingBoxValues.clear();
+
 					}
 					count++;
+				}
+				// store bounding box values for a specific image
+				if (!boundingBoxValues.empty()) {
+					boundingBoxes.push_back(boundingBoxValues);
+					boundingBoxValues.clear();
 				}
 			}
 			annotationTxtFile.close();
