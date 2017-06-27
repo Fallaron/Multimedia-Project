@@ -82,7 +82,7 @@ int main() {
 	params.term_crit = TermCriteria(CV_TERMCRIT_ITER, 10, 0.00001);
 	train_classifier(pos_datasetFeatArray, neg_datasetFeatArray, pos_feat_dims, neg_feat_dims, svmModel, params);
 
-	retrainModel(params, NEGFILE, svmModel, pos_datasetFeatArray, pos_feat_dims, neg_datasetFeatArray, neg_feat_dims);
+	retrainModel(params, NEGFILE, svmModel, neg_datasetFeatArray, neg_feat_dims, pos_datasetFeatArray, pos_feat_dims);
 
 	//useTestImages(POSTESTFILE, svmModel); 
 
