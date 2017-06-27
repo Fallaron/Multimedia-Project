@@ -17,7 +17,7 @@
 #define TEMPLATEWIDTH 64
 #define TEMPLATEHEIGHT 128
 #define LAMDA 5
-#define DISVALUETRESHOLD -1.3
+#define DISVALUETRESHOLD -0.1
 #define POSFILE "pos.lst"
 #define NEGFILE "neg.lst"
 
@@ -80,8 +80,9 @@ int main() {
 
 	retrainModel(params, NEGFILE, svmModel, pos_datasetFeatArray, pos_feat_dims, neg_datasetFeatArray, neg_feat_dims);
 
-	useTestImages(POSTESTFILE, svmModel); 
+	//useTestImages(POSTESTFILE, svmModel); 
 	
+	cout << "main done" << endl;
 	getchar();
 	return 0;
 }
@@ -121,12 +122,13 @@ void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg
 		//freeVectorizedFeatureArray(templFeat);
 	}
 	//TODO: Free vector<double**>
-
-	train_classifier(pos_feat_array, neg_feat_array, pos_dims, neg_dims, SVMPath, params,true_neg_feat,true_neg_dims);
 	cout << "Gathered Hard Negatives!" << endl;
+	train_classifier(pos_feat_array, neg_feat_array, pos_dims, neg_dims, SVMPath, params,true_neg_feat,true_neg_dims);
+	cout << "Finished retraining" << endl;
 }
 
 void useTestImages(String path, String SVMPath) {
+	cout << "use test images" << endl;
 	ifstream locations;
 	locations.open(path);
 	String file;
