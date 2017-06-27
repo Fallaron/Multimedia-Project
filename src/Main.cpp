@@ -34,7 +34,9 @@ using namespace cv;
 
 vector<double**> vFalsePositives;
 
-double DISVALUETRESHOLD = -0;
+//initial = 0, see retrain method
+double DISVALUETRESHOLD = 0;
+Size interval(750, 900);
 
 
 void slideOverImage(Mat img, string svmModel, bool negTrain);
@@ -83,7 +85,7 @@ int main() {
 	retrainModel(params, NEGFILE, svmModel, pos_datasetFeatArray, pos_feat_dims, neg_datasetFeatArray, neg_feat_dims);
 
 	//useTestImages(POSTESTFILE, svmModel); 
-	
+
 	cout << "... (Enter) to end ..." << endl;
 	getchar();
 	return 0;
@@ -97,31 +99,49 @@ void addtoFalsePositives(double** T) {
 
 void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg_feat_array, vector<int> neg_dims, double ** pos_feat_array, vector<int> pos_dims) {
 	cout << "RETRAINING!" << endl;
-	ifstream locations;
-	locations.open(path);
+	ifstream locations;	
 	String file;
 	vector<int> true_neg_dims;
 	int featH = TEMPLATEHEIGHT / CELLSIZE;
 	int featW = TEMPLATEWIDTH / CELLSIZE;
 
-	bool first_run = true;
-	while (first_run || vFalsePositives.size() > 800) {
+	int desiredTureNegCount = neg_dims[0] / 10;
+	int offset = 100;
+	cout << "desiredTrueNegCout: " << desiredTureNegCount << " - " << neg_dims[0] << "-"<<pos_dims[0]<< endl;
+	getchar();
+
+	bool treshold_found = false;
+	bool going_forward;
+	while (!treshold_found && DISVALUETRESHOLD <= 0) {
+		locations.open(path);
+		for (int i = 0; i < vFalsePositives.size(); i++) {
+			freeVectorizedFeatureArray(vFalsePositives[i]);
+		}
 		vFalsePositives.clear();
 		cout << "Running neg_train with threshold " << DISVALUETRESHOLD << endl;
 		while (getline(locations, file)) {
 			Mat img = imread(file);
 			slideOverImage(img, SVMPath, true);
 		}
-		first_run = false;
-		DISVALUETRESHOLD -= 0.1;
-		cout << "vFalsePositives is now size " << vFalsePositives.size() << endl;
+		cout << "Got " << vFalsePositives.size() << " true_negs with treshold " << DISVALUETRESHOLD << endl;
+		if (vFalsePositives.size() >(desiredTureNegCount + offset)) {
+			DISVALUETRESHOLD -= 0.1;
+		}
+		else if (vFalsePositives.size() < (desiredTureNegCount-offset) && DISVALUETRESHOLD < -0.02) {
+			DISVALUETRESHOLD += 0.02;
+		}
+		else {
+			treshold_found = true;
+		}
+		getchar();
+		locations.close();
 	}
-	cout << "selected threshold " << threshold << " with vectorsize " << vFalsePositives.size() << endl;
+	cout << "selected threshold " << DISVALUETRESHOLD << " with " << vFalsePositives.size() << " true_negs" << endl;
 	true_neg_dims.push_back(vFalsePositives.size());
 	true_neg_dims.push_back(32);
 	double ** true_neg_feat = (double**)calloc(vFalsePositives.size(), sizeof(double*));
 
-	
+
 	for (int i = 0; i < vFalsePositives.size(); i++) {
 		true_neg_feat[i] = (double *)calloc(32, sizeof(double));
 	}
@@ -137,7 +157,7 @@ void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg
 	}
 	//TODO: Free vector<double**>
 	cout << "Gathered Hard Negatives!" << endl;
-	train_classifier(pos_feat_array, neg_feat_array, pos_dims, neg_dims, SVMPath, params,true_neg_feat,true_neg_dims);
+	train_classifier(pos_feat_array, neg_feat_array, pos_dims, neg_dims, SVMPath, params, true_neg_feat, true_neg_dims);
 	cout << "Finished retraining" << endl;
 }
 
@@ -249,11 +269,12 @@ void slideOverImage(Mat img, string svm_model_path, bool negTrain) {
 					}
 					//size of Template in Original Window, may be needed in Future.
 					//show means he found something.
-					if (negTrain&& show) {  
+					if (negTrain&& show) {
 						//found false positive
 						addtoFalsePositives(vec_featArray);
 						show = false;
-					} else {
+					}
+					else {
 						//no false positive or not training negative, free featArray
 						freeVectorizedFeatureArray(vec_featArray);
 					}
