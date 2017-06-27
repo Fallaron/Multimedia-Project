@@ -152,16 +152,17 @@ void get_HoG_feat_trainSets(double **&dataSet_featArray, std::string dataSet_pat
 					num_img_patches++;
 					p++;
 				}
+				// deallocate memory for FHOG
+				for (int i = 0; i < FHoG_dims[0]; i++) {
+					for (int j = 0; j < FHoG_dims[1]; j++) {
+						free(FHoG[i][j]);
+					}
+					free(FHoG[i]);
+				}
+				free(FHoG);
 			}
 		}
-		// deallocate memory for FHOG
-		for (int i = 0; i < FHoG_dims[0]; i++) {
-			for (int j = 0; j < FHoG_dims[1]; j++) {
-				free(FHoG[i][j]);
-			}
-			free(FHoG[i]);
-		}
-		free(FHoG);
+		
 		cout << "GENERATED NEGATIVE TRAININGDATA" << endl;
 	}
 	// Extract features of the pos sample dataset
