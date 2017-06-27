@@ -76,7 +76,7 @@ int main() {
 	CvSVMParams params;
 	params.svm_type = CvSVM::C_SVC;
 	params.kernel_type = CvSVM::LINEAR;
-	params.term_crit = TermCriteria(CV_TERMCRIT_ITER, 10000, 0.00001);
+	params.term_crit = TermCriteria(CV_TERMCRIT_ITER, 10, 0.00001);
 	train_classifier(pos_datasetFeatArray, neg_datasetFeatArray, pos_feat_dims, neg_feat_dims, svmModel, params);
 
 	retrainModel(params, NEGFILE, svmModel, pos_datasetFeatArray, pos_feat_dims, neg_datasetFeatArray, neg_feat_dims);
@@ -106,6 +106,7 @@ void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg
 		slideOverImage(img, SVMPath, true);
 	}
 	true_neg_dims.push_back(vFalsePositives.size());
+	true_neg_dims.push_back(32);
 	double ** true_neg_feat = (double**)calloc(vFalsePositives.size(), sizeof(double*));
 	for (int i = 0; i < vFalsePositives.size(); i++) {
 		true_neg_feat[i] = (double *)calloc(32, sizeof(double));
@@ -136,54 +137,6 @@ void useTestImages(String path, String SVMPath) {
 	}
 }
 
-vector<double***> generatePositivTrainingData(String path) {
-	ifstream locations;
-	locations.open(path);
-	String file;
-	vector<double***> positivHogFeatures;
-	while (getline(locations, file)) {
-		Mat img = imread(file);
-		vector<int> dims;
-		double*** feat = computeHoG(img, CELLSIZE, dims);
-		double*** positiv = getHOGFeatureArrayOnScaleAt(16, 16, dims, feat);
-		positivHogFeatures.push_back(positiv);
-	}
-	cout << "Generated Positiv Training Hog Features" << endl;
-	return positivHogFeatures;
-}
-
-
-vector<double***> generateNegativTrainingsData(String path) {
-	ifstream locations;
-	locations.open(path);
-	String file;
-	vector<double***> negativHogFeatures;
-	int c = 0;
-	while (getline(locations, file)) {
-		Mat img = imread(file);
-		vector<int> dims;
-		double*** feat = computeHoG(img, CELLSIZE, dims);
-		c = 0;
-		for (int y = CELLSIZE; y < img.rows - TEMPLATEHEIGHT && c < 10; y += CELLSIZE) {
-			for (int x = CELLSIZE; x < img.cols - TEMPLATEWIDTH && c < 10; x += CELLSIZE) {
-				try
-				{
-					double *** featuresNEG = getHOGFeatureArrayOnScaleAt(x, y, dims, feat);
-					negativHogFeatures.push_back(featuresNEG);
-					c++;
-				}
-				catch (int n)
-				{
-					continue;
-				}
-			}
-		}
-		if (c < 10)
-			cout << "FAULT";
-	}
-	cout << "Generated Negative Training Hog Features" << endl;
-	return negativHogFeatures;
-}
 
 //scale 0 = just img;
 double*** getHOGFeatureArrayOnScaleAt(int x, int y, vector<int> &dims, double *** featArray) throw (int) {
