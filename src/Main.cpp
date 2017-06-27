@@ -17,7 +17,7 @@
 #define TEMPLATEWIDTH 64
 #define TEMPLATEHEIGHT 128
 #define LAMDA 5
-#define DISVALUETRESHOLD -0.1
+//#define DISVALUETRESHOLD -0.1
 #define POSFILE "pos.lst"
 #define NEGFILE "neg.lst"
 
@@ -33,6 +33,8 @@ using namespace std;
 using namespace cv;
 
 vector<double**> vFalsePositives;
+
+double DISVALUETRESHOLD = -0;
 
 
 void slideOverImage(Mat img, string svmModel, bool negTrain);
@@ -82,7 +84,7 @@ int main() {
 
 	//useTestImages(POSTESTFILE, svmModel); 
 	
-	cout << "main done" << endl;
+	cout << "... (Enter) to end ..." << endl;
 	getchar();
 	return 0;
 }
@@ -101,13 +103,25 @@ void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg
 	vector<int> true_neg_dims;
 	int featH = TEMPLATEHEIGHT / CELLSIZE;
 	int featW = TEMPLATEWIDTH / CELLSIZE;
-	while (getline(locations, file)) {
-		Mat img = imread(file);
-		slideOverImage(img, SVMPath, true);
+
+	bool first_run = true;
+	while (first_run || vFalsePositives.size() > 800) {
+		vFalsePositives.clear();
+		cout << "Running neg_train with threshold " << DISVALUETRESHOLD << endl;
+		while (getline(locations, file)) {
+			Mat img = imread(file);
+			slideOverImage(img, SVMPath, true);
+		}
+		first_run = false;
+		DISVALUETRESHOLD -= 0.1;
+		cout << "vFalsePositives is now size " << vFalsePositives.size() << endl;
 	}
+	cout << "selected threshold " << threshold << " with vectorsize " << vFalsePositives.size() << endl;
 	true_neg_dims.push_back(vFalsePositives.size());
 	true_neg_dims.push_back(32);
 	double ** true_neg_feat = (double**)calloc(vFalsePositives.size(), sizeof(double*));
+
+	
 	for (int i = 0; i < vFalsePositives.size(); i++) {
 		true_neg_feat[i] = (double *)calloc(32, sizeof(double));
 	}
