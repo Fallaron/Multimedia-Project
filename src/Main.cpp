@@ -34,8 +34,7 @@ using namespace cv;
 
 vector<double**> vFalsePositives;
 
-vector<double***> generatePositivTrainingData(String path);
-vector<double***> generateNegativTrainingsData(String path);
+
 void slideOverImage(Mat img, string svmModel, bool negTrain);
 double*** getHOGFeatureArrayOnScaleAt(int x, int y, vector<int> &dims, double *** featArray) throw (int);
 void freeHoGFeaturesOnScale(double*** feat);
