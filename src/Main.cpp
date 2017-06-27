@@ -77,12 +77,25 @@ int main() {
 	// train
 	train_classifier(pos_datasetFeatArray, neg_datasetFeatArray, pos_feat_dims, neg_feat_dims, svmModel, params);
 	cout << "done!" << endl;
+	
+	bool satisfied = false;
 	// retrain
-	cout << "Retraining... " << endl;
-	retrainModel(params, NEGFILE, svmModel, neg_datasetFeatArray, neg_feat_dims, pos_datasetFeatArray, pos_feat_dims);
-	cout << "Retraning done!" << endl;
-	// test
-	//useTestImages(POSTESTFILE, svmModel); 
+	while (!satisfied) {
+		cout << "Retraining... " << endl;
+		retrainModel(params, NEGFILE, svmModel, neg_datasetFeatArray, neg_feat_dims, pos_datasetFeatArray, pos_feat_dims);
+		cout << "Retraning done!" << endl;
+		// test
+		//useTestImages(POSTESTFILE, svmModel); 
+		string input = "";
+		getline(cin, input);
+		cout << "Test your svm... are you satisfied? (y/n)";
+		while (input.empty()) {
+			getline(cin, input);
+		}
+		if (input == "y") {
+			satisfied = true;
+		}
+	}
 
 	cout << "... (Enter) to end ..." << endl;
 	getchar();
