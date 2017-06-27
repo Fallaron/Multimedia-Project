@@ -101,6 +101,7 @@ void get_HoG_feat_trainSets(double **&dataSet_featArray, std::string dataSet_pat
 	int num_img = dataSet_img_paths.size();
 
 	if (pos_Set == false) {
+		cout << "Generating negative training data... ";
 		int patchWidth = 80;
 		int patchHeight = 144;
 		srand(time(NULL));
@@ -164,10 +165,11 @@ void get_HoG_feat_trainSets(double **&dataSet_featArray, std::string dataSet_pat
 			}
 		}
 		
-		cout << "GENERATED NEGATIVE TRAININGDATA" << endl;
+		cout << "done!" << endl;
 	}
 	// Extract features of the pos sample dataset
 	else {
+		cout << "Generating positive training data... ";
 		vector<int> FHoG_dims;
 		double ***FHoG;
 		//memory for dataset featureArray bag
@@ -209,7 +211,7 @@ void get_HoG_feat_trainSets(double **&dataSet_featArray, std::string dataSet_pat
 		}// end for
 		 // deallocate memory for FHOG
 		
-		cout << "GENERATED POSITIVE TRAININGDATA" << endl;
+		cout << "done!" << endl;
 	}// end else
 
 
