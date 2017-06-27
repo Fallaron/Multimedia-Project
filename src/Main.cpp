@@ -281,9 +281,13 @@ void slideOverImage(Mat img, string svm_model_path, bool negTrain) {
 					}
 					//size of Template in Original Window, may be needed in Future.
 					//show means he found something.
-					if (negTrain&& show) {  //n
+					if (negTrain&& show) {  
+						//found false positive
 						addtoFalsePositives(vec_featArray);
 						show = false;
+					} else {
+						//no false positive or not training negative, free featArray
+						freeVectorizedFeatureArray(vec_featArray);
 					}
 					if (show && !negTrain) {
 						double scale = pow(scalingfactor, stage);
