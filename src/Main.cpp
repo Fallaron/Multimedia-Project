@@ -49,41 +49,39 @@ void useTestImages(String path, String SVMPath);
 void addtoFalsePositives(double** T);
 
 int main() {
-	Mat img = imread("pos_ped.jpg");
-
-	//vector<double***> neg = generateNegativTrainingsData(NEGFILE);
-	//vector<double***> pos = generatePositivTrainingData(POSFILE);
-	//cout << "pos: " << pos.size() << endl << "neg: " << neg.size() << endl;
-
-	//Mat train = Mat(neg);
 
 	std::vector<std::vector<int>> boundingBoxes;
-	getBoundingBox(ANNOTATIONTESTFILE, boundingBoxes);
-	for (const auto& bBox : boundingBoxes) {
-		for (const auto val : bBox)
-			cout << val << ",";
-		cout << endl;
-	}
+	
+	//getBoundingBox(ANNOTATIONTESTFILE, boundingBoxes);
+	//for (const auto& bBox : boundingBoxes) {
+	//	for (const auto val : bBox)
+	//		cout << val << ",";
+	//	cout << endl;
+	//}
 
 	vector<int> pos_feat_dims;
 	vector<int> neg_feat_dims;
 	double ** pos_datasetFeatArray;
 	double ** neg_datasetFeatArray;
+
 	cv::Mat responses;
 	string svmModel = "svmRetrained.xml";
 
-	get_HoG_feat_trainSets(pos_datasetFeatArray, POSFILE, CELLSIZE, TEMPLATEWIDTH, TEMPLATEHEIGHT, pos_feat_dims, true);
-	cout << "pos: " << pos_feat_dims[0] << endl;
+	get_HoG_feat_trainSets(pos_datasetFeatArray, POSFILE, CELLSIZE, TEMPLATEWIDTH, TEMPLATEHEIGHT, pos_feat_dims, true);	
 	get_HoG_feat_trainSets(neg_datasetFeatArray, NEGFILE, CELLSIZE, TEMPLATEWIDTH, TEMPLATEHEIGHT, neg_feat_dims, false);
+	cout << "pos: " << pos_feat_dims[0] << endl;
 	cout << "neg: " << neg_feat_dims[0] << endl;
+
 	CvSVMParams params;
 	params.svm_type = CvSVM::C_SVC;
 	params.kernel_type = CvSVM::LINEAR;
 	params.term_crit = TermCriteria(CV_TERMCRIT_ITER, 10, 0.00001);
+	 
+	// train
 	train_classifier(pos_datasetFeatArray, neg_datasetFeatArray, pos_feat_dims, neg_feat_dims, svmModel, params);
-
+	// retrain
 	retrainModel(params, NEGFILE, svmModel, neg_datasetFeatArray, neg_feat_dims, pos_datasetFeatArray, pos_feat_dims);
-
+	// test
 	//useTestImages(POSTESTFILE, svmModel); 
 
 	cout << "... (Enter) to end ..." << endl;
