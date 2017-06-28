@@ -119,12 +119,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\evaluation.cpp" />
     <ClCompile Include="src\features.cpp" />
     <ClCompile Include="src\hog\hog.cpp" />
     <ClCompile Include="src\Main.cpp" />
     <ClCompile Include="src\trainer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\evaluation.h" />
     <ClInclude Include="src\features.h" />
     <ClInclude Include="src\hog\hog.h" />
     <ClInclude Include="src\trainer.h" />
