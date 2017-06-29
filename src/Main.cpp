@@ -94,7 +94,10 @@ int main() {
 	}
 
 	cout << "... (Enter) to end ..." << endl; */
-	string pat = "Im2.jpeg"; // Im2.jpeg
+
+	// TEST NON - MAXIMA SUPPRESSION  returns final Bounding box in a single imag.....
+
+	string pat = "Im3.jpg"; // Im2.jpeg
 	cv::Mat img = imread(pat);
 	std::vector<std::vector<float>> final_Box;
 	std::vector<std::vector<float>> dWinfeat = slideOverImage(img, svmModel, false);
@@ -311,7 +314,7 @@ std::vector<std::vector<float>> slideOverImage(Mat img, string svm_model_path, b
 
 					if (person == true && disVal < DISVALUETRESHOLD) {
 						if (!negTrain)
-							cout << "Found Pedestrain, distance: " << disVal << endl;
+							cout << "Found Pedestrain, distance: " << disVal <<endl;
 						person = false;
 						show = true;
 						/************added**********/
@@ -348,7 +351,7 @@ std::vector<std::vector<float>> slideOverImage(Mat img, string svm_model_path, b
 
 						imshow("Template", copy);
 						show = false;
-						waitKey();
+						waitKey(1);
 					}
 					freeHoGFeaturesOnScale(feat);
 					//freeVectorizedFeatureArray(vec_featArray);
