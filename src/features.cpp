@@ -112,7 +112,6 @@ bool is_detection_true(std::vector<std::vector<float>> prediction_bBox, int img_
 			}
 		}		
 	}
-	
 	return status;
 }
 
