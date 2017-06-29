@@ -8,4 +8,4 @@
 #include <iostream>
 
 void non_Max_Suppression(std::vector<std::vector<float>>& final_BBox, std::vector<std::vector<float>> detWinFeat, int temp_Width, int temp_Height);
-void detectionWindow_features(std::vector<std::vector<float>>& detWinFeat, int x, int y, float scale, float score, int img_id);
+void detectionWindow_features(std::vector<std::vector<float>>& detWinFeat, int x, int y, float scale, float score);

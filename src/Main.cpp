@@ -7,6 +7,7 @@
 #include "HOG\hog.h"
 #include "features.h"
 #include "trainer.h"
+#include "evaluation.h"
 
 
 
@@ -37,7 +38,7 @@ vector<double**> vFalsePositives;
 //initial = 0, see retrain method
 double DISVALUETRESHOLD = -1.3;
 
-void slideOverImage(Mat img, string svmModel, bool negTrain);
+std::vector<std::vector<float>> slideOverImage(Mat img, string svmModel, bool negTrain);
 double*** getHOGFeatureArrayOnScaleAt(int x, int y, vector<int> &dims, double *** featArray) throw (int);
 void freeHoGFeaturesOnScale(double*** feat);
 void freeVectorizedFeatureArray(double ** v_feat);
@@ -50,11 +51,6 @@ int main() {
 
 	//std::vector<std::vector<int>> boundingBoxes;	
 	//getBoundingBox(ANNOTATIONTESTFILE, boundingBoxes);
-	//for (const auto& bBox : boundingBoxes) {
-	//	for (const auto val : bBox)
-	//		cout << val << ",";
-	//	cout << endl;
-	//}
 
 	vector<int> pos_feat_dims;
 	vector<int> neg_feat_dims;
@@ -62,8 +58,8 @@ int main() {
 	double ** neg_datasetFeatArray;
 
 	cv::Mat responses;
-	string svmModel = "svmRetrained.xml";
-
+	string svmModel = "svm_3.1.xml";
+	/*
 	get_HoG_feat_trainSets(pos_datasetFeatArray, POSFILE, CELLSIZE, TEMPLATEWIDTH, TEMPLATEHEIGHT, pos_feat_dims, true);
 	get_HoG_feat_trainSets(neg_datasetFeatArray, NEGFILE, CELLSIZE, TEMPLATEWIDTH, TEMPLATEHEIGHT, neg_feat_dims, false);
 	cout << "Got " << pos_feat_dims[0] << " positives and " << neg_feat_dims[0] << " negatives." << endl;
@@ -97,7 +93,27 @@ int main() {
 		}
 	}
 
-	cout << "... (Enter) to end ..." << endl;
+	cout << "... (Enter) to end ..." << endl; */
+	string pat = "Im2.jpeg"; // Im2.jpeg
+	cv::Mat img = imread(pat);
+	std::vector<std::vector<float>> final_Box;
+	std::vector<std::vector<float>> dWinfeat = slideOverImage(img, svmModel, false);
+	cout << ".....Detection Window features......" << endl;
+	for (auto &b : dWinfeat) {
+		for (auto v : b) {
+			cout << v << ",";
+		}
+		cout<< endl;
+	}
+	cout << ".....Final bBounding Boxes....." << endl;
+
+	non_Max_Suppression(final_Box, dWinfeat, TEMPLATEWIDTH, TEMPLATEHEIGHT);
+	for (auto &b : final_Box) {
+		for (auto v : b) {
+			cout << v << ",";
+		}
+		cout << endl;
+	}
 	getchar();
 	return 0;
 }
@@ -247,7 +263,7 @@ double*** getHOGFeatureArrayOnScaleAt(int x, int y, vector<int> &dims, double **
 }
 
 //Slides of an Image and aggregates HoG over Template Window
-void slideOverImage(Mat img, string svm_model_path, bool negTrain) {
+std::vector<std::vector<float>> slideOverImage(Mat img, string svm_model_path, bool negTrain) {
 	Mat src;
 	Mat pyrtemp;
 	bool show = false;
@@ -260,6 +276,8 @@ void slideOverImage(Mat img, string svm_model_path, bool negTrain) {
 	int templateh = TEMPLATEHEIGHT;
 	int templatew = TEMPLATEWIDTH;
 	static double scalingfactor = pow(2, 1.0 / LAMDA);
+
+	std::vector<std::vector<float>> detectionWinFeat = std::vector<std::vector<float>>(); // added
 
 	CvSVM *newSVM = new CvSVM;
 	newSVM->load(svm_model_path.c_str());
@@ -296,6 +314,8 @@ void slideOverImage(Mat img, string svm_model_path, bool negTrain) {
 							cout << "Found Pedestrain, distance: " << disVal << endl;
 						person = false;
 						show = true;
+						/************added**********/
+						detectionWindow_features(detectionWinFeat, x, y, scale, disVal);
 					}
 					//size of Template in Original Window, may be needed in Future.
 					//show means he found something.
@@ -328,7 +348,7 @@ void slideOverImage(Mat img, string svm_model_path, bool negTrain) {
 
 						imshow("Template", copy);
 						show = false;
-						waitKey(1);
+						waitKey();
 					}
 					freeHoGFeaturesOnScale(feat);
 					//freeVectorizedFeatureArray(vec_featArray);
@@ -368,6 +388,8 @@ void slideOverImage(Mat img, string svm_model_path, bool negTrain) {
 		//cout << "Width: " << img.size().width << " -- Height: " << img.size().height << endl;
 		freeHog(dims, featArray);
 	}
+
+	return detectionWinFeat;
 }
 
 

@@ -132,6 +132,8 @@
     <ClInclude Include="src\trainer.h" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="Im2.jpeg" />
+    <Image Include="Im3.jpg" />
     <Image Include="pos_ped.jpg" />
   </ItemGroup>
   <ItemGroup>
