@@ -75,7 +75,7 @@ bool is_detection_true(std::vector<std::vector<float>> prediction_bBox, int img_
 	int width, height;
 	double overlap = 0.0;
 
-	for (int i = 0; i < gBox_size; i++) {
+	for (int i = 0; i < 1; i++) {
 		// go through in fours.. a an element could more than one bounding boxes
 		int boxes = boundingBoxes[i].size() / 4;
 		for (int k = 0; k < boxes; k += 4) {
@@ -103,7 +103,7 @@ bool is_detection_true(std::vector<std::vector<float>> prediction_bBox, int img_
 					overlap = intersect / uni;
 					cout << "------"<<overlap << "---" << endl;
 					// if overlap, then change status and continue or store this evaluation data
-					if (overlap > 0.4) {
+					if (overlap > 0.5) {
 						status = true;
 						cout << "True Positive";
 						//break; // u cud a set a boolean here

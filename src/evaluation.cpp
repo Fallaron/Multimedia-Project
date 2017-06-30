@@ -6,11 +6,11 @@ using namespace std;
 void non_Max_Suppression(std::vector<std::vector<float>>& final_BBox, std::vector<std::vector<float>> detWinFeat, int temp_Width, int temp_Height) {
 	final_BBox = std::vector<std::vector<float>>(0);
 	int boxes = detWinFeat.size();
-	int sel = 1; // it could be empty-.... if control
 	float overlap = 0.0;
-	bool addNewBox = true;
-	if (boxes >= 1) {
+	bool addNewBox = true, del = false;
+	if (!detWinFeat.empty()) {
 		//************* initial bBox values ********
+		int sel = 1;
 		double scale = detWinFeat[0][3];
 		int x1 = detWinFeat[0][1] * scale;
 		int y1 = detWinFeat[0][2] * scale;
@@ -29,6 +29,7 @@ void non_Max_Suppression(std::vector<std::vector<float>>& final_BBox, std::vecto
 
 		for (int i = 1; i < boxes; i++) {
 			addNewBox = true;
+			del = false;
 			double scale = detWinFeat[i][3];
 			int pos_x = detWinFeat[i][1] * scale;
 			int pos_y = detWinFeat[i][2] * scale;
@@ -37,16 +38,19 @@ void non_Max_Suppression(std::vector<std::vector<float>>& final_BBox, std::vecto
 			int height = temp_Height * scale;
 
 			cv::Rect current_bBox(pos_x, pos_y, width, height);
+			float current_score = detWinFeat[i][0];
 			// go thrugh all best Boxes in final_bBoxes and determine if there is overlap if no add current bboxe to final_bBox array.
+			// if you  have to replace more than one boxes in the final bBoxes delete 2nd, 3rd etc to be replaced boxes reducing the final_box vector size and avoiding duplicates
 			for (int n = 0; n < sel; n++) {
 				int b_x1 = final_BBox[n][0];
 				int b_y1 = final_BBox[n][1];
 				int b_x2 = final_BBox[n][2];
 				int b_y2 = final_BBox[n][3];
+				float stored_score = final_BBox[n][4];
 
 				cv::Rect stored_bBox(b_x1, b_y1, b_x2 - b_x1, b_y2 - b_y1);
-				cv::Rect intersect_rect = current_bBox & stored_bBox;
-				cv::Rect union_rect = current_bBox | stored_bBox;
+				cv::Rect intersect_rect =  stored_bBox & current_bBox;
+				cv::Rect union_rect =  stored_bBox |  current_bBox;
 
 				float inters = intersect_rect.area();
 				float uni = union_rect.area();
@@ -55,14 +59,21 @@ void non_Max_Suppression(std::vector<std::vector<float>>& final_BBox, std::vecto
 				// that implies we dont store less than threshold overlaping bboxes in final_bBoxes
 				if (overlap > 0.2) {
 					addNewBox = false;
-					if (detWinFeat[i][0] < final_BBox[n][4]) {
-						// replace up to now best box
+					if (del && final_BBox.size() > 1) {
+						final_BBox.erase(final_BBox.begin() + n);
+						sel--;
+					}
+					else {
+						//if (current_score < stored_score) {
+							// replace up to now best box
 						final_BBox[n][0] = pos_x;
 						final_BBox[n][1] = pos_y;
 						final_BBox[n][2] = width + pos_x;
 						final_BBox[n][3] = height + pos_y;
-						final_BBox[n][4] = detWinFeat[i][0];
-					}// else suprress this current bbox
+						final_BBox[n][4] = current_score;
+						del = true;
+						//}// else suprress this current bbox
+					}
 				}
 			}
 			// add new bBox.. cud be new pedstrian thus increase the size of final bBoxes
@@ -73,7 +84,7 @@ void non_Max_Suppression(std::vector<std::vector<float>>& final_BBox, std::vecto
 				temp.push_back(pos_y);
 				temp.push_back(width + pos_x);
 				temp.push_back(width + pos_y);
-				temp.push_back(detWinFeat[i][0]);
+				temp.push_back(current_score);
 				final_BBox.push_back(temp);
 				temp.clear();
 			}

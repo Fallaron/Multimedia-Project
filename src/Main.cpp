@@ -36,7 +36,7 @@ using namespace cv;
 vector<double**> vFalsePositives;
 
 //initial = 0, see retrain method
-double DISVALUETRESHOLD = -1.3;
+double DISVALUETRESHOLD = -1.4;
 
 std::vector<std::vector<float>> slideOverImage(Mat img, string svmModel, bool negTrain);
 double*** getHOGFeatureArrayOnScaleAt(int x, int y, vector<int> &dims, double *** featArray) throw (int);
@@ -58,7 +58,7 @@ int main() {
 	double ** neg_datasetFeatArray;
 
 	cv::Mat responses;
-	string svmModel = "svm_3.1.xml";
+	string svmModel = "svm_3.0.xml"; //svm10000Linear
 	/*
 	get_HoG_feat_trainSets(pos_datasetFeatArray, POSFILE, CELLSIZE, TEMPLATEWIDTH, TEMPLATEHEIGHT, pos_feat_dims, true);
 	get_HoG_feat_trainSets(neg_datasetFeatArray, NEGFILE, CELLSIZE, TEMPLATEWIDTH, TEMPLATEHEIGHT, neg_feat_dims, false);
@@ -97,7 +97,7 @@ int main() {
 
 	// TEST NON - MAXIMA SUPPRESSION  returns final Bounding box in a single imag.....
 
-	string pat = "crop_000001.png"; // Im2.jpeg crop_000001.png
+	string pat = "Im3.jpg"; // Im2.jpeg crop_000001.png person_138.png
 	cv::Mat img = imread(pat);
 	std::vector<std::vector<float>> final_Box;
 	std::vector<std::vector<float>> dWinfeat = slideOverImage(img, svmModel, false);
@@ -118,7 +118,7 @@ int main() {
 		cout << endl;
 	}
 
-	is_detection_true(final_Box, 1, TEMPLATEWIDTH, TEMPLATEHEIGHT, boundingBoxes);
+	//is_detection_true(final_Box, 1, TEMPLATEWIDTH, TEMPLATEHEIGHT, boundingBoxes);
 	getchar();
 	return 0;
 }

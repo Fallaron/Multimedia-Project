@@ -7,8 +7,8 @@ using namespace std;
 
 // generate SVM train vector set from HOG features both positive and negative..
 cv::Mat generate_SVM_trainSet(double **pos_featArray, double** neg_featArray, std::vector<int> pos_dims, std::vector<int>neg_dims, cv::Mat &responses, double ** trueNeg_featArray = NULL, std::vector<int> true_neg_dims = std::vector<int>(NULL)) {
-	int pos_count = pos_dims[0]; //sizeof(pos_featArray) / sizeof(pos_featArray[0]);
-	int neg_count = neg_dims[0]; //sizeof(neg_featArray) / sizeof(neg_featArray[0]);
+	int pos_count = pos_dims[0];
+	int neg_count = neg_dims[0];
 	int true_neg_count = 0;
 	int trueNeg_features = 0;
 	if (!(true_neg_dims.empty()))
@@ -17,7 +17,7 @@ cv::Mat generate_SVM_trainSet(double **pos_featArray, double** neg_featArray, st
 		//TODO: needed?
 		trueNeg_features = true_neg_dims[1];
 	int img_total_count = pos_count + neg_count + true_neg_count;
-	int features = pos_dims[1];	//sizeof(pos_featArray[1]) / pos_count;
+	int features = pos_dims[1];	
 	
 	cv::Mat trainDataSet = cv::Mat(img_total_count, features, CV_32FC1);
 	// label Dataset
@@ -64,19 +64,8 @@ std::string train_classifier(double **pos_featArray, double** neg_featArray, std
 	Mat varidx = Mat();
 	CvSVM SVM;
 
-
 	// pick one image at a time from Mat Data and train the SVM with it and move on to the next till all are done
 	bool model;
-
-	/*for (int i = 0; i < data.rows; i++) {
-	for (int n = 0; n < data.cols; n++) {
-	img_sample.at<float>(0, n) = data.at<float>(i,n);
-	}
-	// pick a single corresponding respones for a paticular image every time
-	img_response.at<float>(i, 0) = responses.at<float>(i, 0);
-	model = SVM.train_auto(img_sample, img_response, varidx, sample, params);
-	} */
-
 	model = SVM.train_auto(data, responses, varidx, sample, params);
 
 	if (model) {
@@ -85,7 +74,6 @@ std::string train_classifier(double **pos_featArray, double** neg_featArray, std
 	cout << "SVM "<< SVMModel_Name << " successfully trained." << endl;
 	return SVMModel_Name;
 }
-
 
 
 // convert feature or features from the scanning window to dataset useable by SVM for prediction return a Mat
@@ -122,7 +110,6 @@ float  predict_pedestrian(double ** featArray, vector<int> feat_dims, CvSVM *new
 	int p = 0;
 	for (int i = 0; i < feat_dims[0]; i++) {
 		for (int j = 0; j < feat_dims[1]; j++) {
-			//predictSample = (cv::Mat_<float>(i, feat_dims[1]) << i, predicted.at<float>(i, j));
 			predictSample.at<float>(i, j) = predicted.at<float>(i, j);
 		}
 
@@ -134,9 +121,6 @@ float  predict_pedestrian(double ** featArray, vector<int> feat_dims, CvSVM *new
 	float res = newSVM->predict(predictSample);
 	float distanceDFVal = newSVM->predict(predictSample, true);
 	if (res == 1) {
-		//prediction[p][0] = pos_x;
-		//prediction[p][1] = pos_y;
-		//prediction[p][2] = scale;
 		found_Person = true;
 	}
 	return distanceDFVal;
