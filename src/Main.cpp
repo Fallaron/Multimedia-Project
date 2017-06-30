@@ -218,7 +218,11 @@ void useTestImages(String path, String SVMPath) {
 	String file;
 	while (getline(locations, file)) {
 		Mat img = imread(file);
-		slideOverImage(img, SVMPath, false);
+		std::vector<std::vector<float>> final_Box;
+		std::vector<std::vector<float>> dWinfeat = slideOverImage(img, SVMPath, false);
+		non_Max_Suppression(final_Box, dWinfeat, TEMPLATEWIDTH, TEMPLATEHEIGHT);
+		showMaximabBoxes(final_Box, file);
+
 	}
 }
 
@@ -288,10 +292,7 @@ std::vector<std::vector<float>> slideOverImage(Mat img, string svm_model_path, b
 	newSVM->load(svm_model_path.c_str());
 
 	while (img.cols > TEMPLATEWIDTH && img.rows > TEMPLATEHEIGHT) {
-		if (!negTrain) {
-			imshow("Template", src);
-			waitKey(1);
-		}
+		
 
 		vector<int> dims;
 
@@ -333,7 +334,8 @@ std::vector<std::vector<float>> slideOverImage(Mat img, string svm_model_path, b
 						//no false positive or not training negative, free featArray
 						freeVectorizedFeatureArray(vec_featArray);
 					}
-					if (show && !negTrain) {
+					// SLIDE OVER IMAGE NO LONGER SHOWS IMAGES!
+					/*if (show && !negTrain) {
 						double scale = pow(scalingfactor, stage);
 						Scalar green(0, 255, 0);
 
@@ -354,7 +356,7 @@ std::vector<std::vector<float>> slideOverImage(Mat img, string svm_model_path, b
 						imshow("Template", copy);
 						show = false;
 						waitKey(1);
-					}
+					}*/
 					freeHoGFeaturesOnScale(feat);
 					//freeVectorizedFeatureArray(vec_featArray);
 				}

@@ -3,6 +3,55 @@
 using namespace cv;
 using namespace std;
 
+
+
+void fixMaxSupressions(std::vector<std::vector<float>>& final_BBox) {
+	int size = final_BBox.size();
+	for (int i = 0; i < size; i++) {
+		for (int j = 0; j < size; j++) {
+			if (i == j)
+				continue;
+			int xtl1 = final_BBox[i][0];
+			int ytl1 = final_BBox[i][1];
+			int xbr1 = final_BBox[i][2];
+			int ybr1 = final_BBox[i][3];
+
+			Point tl1(xtl1, ytl1);
+			Point br1(xbr1, ybr1);
+
+			Rect r1(tl1, br1);
+
+
+			int xtl2 = final_BBox[j][0];
+			int ytl2 = final_BBox[j][1];
+			int xbr2 = final_BBox[j][2];
+			int ybr2 = final_BBox[j][3];
+
+			Point tl2(xtl2, ytl2);
+			Point br2(xbr2, ybr2);
+
+			Rect r2(tl2, br2);
+
+			Rect Union = r1 | r2;
+			Rect inter = r1&r2;
+
+			float overlap = (float)inter.area() / (float)Union.area();
+			if (overlap > 0.2) {
+				float score1 = final_BBox[i][4];
+				float score2 = final_BBox[j][4];
+				
+				if (score1 < score2&& i < j) {
+					final_BBox.erase(final_BBox.begin() + i);
+				}
+				size--;
+			}
+			if (abs(xtl1 - xbr1) == abs(ytl1 - ybr1)) {
+				cout << "HIER!" << endl;
+			}
+		}
+	}
+}
+
 void non_Max_Suppression(std::vector<std::vector<float>>& final_BBox, std::vector<std::vector<float>> detWinFeat, int temp_Width, int temp_Height) {
 	final_BBox = std::vector<std::vector<float>>(0);
 	int boxes = detWinFeat.size();
@@ -48,6 +97,7 @@ void non_Max_Suppression(std::vector<std::vector<float>>& final_BBox, std::vecto
 				int b_y2 = final_BBox[n][3];
 				float stored_score = final_BBox[n][4];
 
+				
 				cv::Rect stored_bBox(b_x1, b_y1, b_x2 - b_x1, b_y2 - b_y1);
 				cv::Rect intersect_rect =  stored_bBox & current_bBox;
 				cv::Rect union_rect =  stored_bBox |  current_bBox;
@@ -65,7 +115,7 @@ void non_Max_Suppression(std::vector<std::vector<float>>& final_BBox, std::vecto
 					}
 					else {
 						//if (current_score < stored_score) {
-							// replace up to now best box
+						// replace up to now best box
 						final_BBox[n][0] = pos_x;
 						final_BBox[n][1] = pos_y;
 						final_BBox[n][2] = width + pos_x;
@@ -90,7 +140,33 @@ void non_Max_Suppression(std::vector<std::vector<float>>& final_BBox, std::vecto
 			}
 		}
 	}
+	fixMaxSupressions(final_BBox);
+		}
+
+
+void showMaximabBoxes(std::vector<std::vector<float>>& final_BBox, string img_Path) {
+	Mat img = imread(img_Path);
+	if (img.empty())
+		return;
+	for (auto &b : final_BBox) {
+		int xtl = b[0];
+		int ytl = b[1];
+		int xbr = b[2];
+		int ybr = b[3];
+		float score = b[4];
+		Point tl(xtl, ytl);
+		Point br(xbr, ybr);
+		rectangle(img, tl, br, Scalar(0, 255, 0));
+		putText(img, to_string(score), tl, FONT_HERSHEY_PLAIN, 1, Scalar(0, 255, 0),1.5);
+
+	}
+
+	imshow("Maxima", img);
+	waitKey();
+
 }
+
+
 
 void detectionWindow_features(std::vector<std::vector<float>>& detWinFeat, int x, int y, float scale, float score) {
 	vector<float> temp;
