@@ -63,31 +63,55 @@ void  getBoundingBox(std::string annotationList, std::vector<std::vector<int>>& 
 	}
 }
 
-bool is_detection_true(int prediction_bBox[], int img_index, int temp_Width, int temp_Height, const std::vector<std::vector<int>> boundingBoxes) {
-	// functions determines the true positive, false positive detections etc.. evaluation tool
-	//prediction_bBox[] entails int x, int y for locality and scale..
+bool is_detection_true(std::vector<std::vector<float>> prediction_bBox, int img_index, int temp_Width, int temp_Height, const std::vector<std::vector<int>> boundingBoxes) {
 
 	bool status = false;
-	int x1 = boundingBoxes[img_index][0];
-	int y1 = boundingBoxes[img_index][1];
-	int x2 = boundingBoxes[img_index][2];
-	int y2 = boundingBoxes[img_index][3];
+	int pBox_size = prediction_bBox.size();
+	int gBox_size = boundingBoxes.size();
+	int pos_x;
+	int pos_y;
+	int pos_x2;
+	int pos_y2;
+	int width, height;
+	double overlap = 0.0;
 
-	double scale = prediction_bBox[0];
-	int pos_x = prediction_bBox[1] * scale;
-	int pos_y = prediction_bBox[2] * scale;
-
-	int width = pos_x + temp_Width * scale;
-	int height = pos_y + temp_Height * scale;
-
-	cv::Rect Predicted_bBox(pos_x, pos_y, width, height);
-	cv::Rect groundtruth_bBox(x1, y1, x2 - x1, y2 - y1);
-	cv::Rect intersect_rect = Predicted_bBox & groundtruth_bBox;
-	cv::Rect union_rect = Predicted_bBox | groundtruth_bBox;
-
-	double overlap = intersect_rect.area() / union_rect.area();
-	if (overlap > 0.5)
-		status = true;
+	for (int i = 0; i < gBox_size; i++) {
+		// go through in fours.. a an element could more than one bounding boxes
+		int boxes = boundingBoxes[i].size() / 4;
+		for (int k = 0; k < boxes; k += 4) {
+			int x1 = boundingBoxes[i][k];
+			int y1 = boundingBoxes[i][k + 1];
+			int x2 = boundingBoxes[i][k + 2];
+			int y2 = boundingBoxes[i][k + 3];
+			cv::Rect groundtruth_bBox(x1, y1, x2 - x1, y2 - y1);
+			// compare a single to all boxes stored in pred_box for this particular Image
+			for (int p = 0; p < pBox_size; p++) {
+				int num_pBoxes = prediction_bBox[p].size() / 5; // 5 becoz score value is also return.. that can be discarded
+				// go through all predicted bounding boxes until a matching ground truth is found if any.. 
+				for (int n = 0; n < num_pBoxes; n += 5) {
+					pos_x = prediction_bBox[p][n];
+					pos_y = prediction_bBox[p][n+1];
+					pos_x2 = prediction_bBox[p][n+2];
+					pos_y2 = prediction_bBox[p][n+3];
+					width = pos_x2 - pos_x;
+					height = pos_y2 - pos_y;
+					cv::Rect Predicted_bBox(pos_x, pos_y, width, height);
+					cv::Rect intersect_rect = Predicted_bBox & groundtruth_bBox;
+					cv::Rect union_rect = Predicted_bBox | groundtruth_bBox;
+					float intersect = intersect_rect.area();
+					float uni = union_rect.area();
+					overlap = intersect / uni;
+					cout << "------"<<overlap << "---" << endl;
+					// if overlap, then change status and continue or store this evaluation data
+					if (overlap > 0.4) {
+						status = true;
+						cout << "True Positive";
+						//break; // u cud a set a boolean here
+					}
+				}
+			}
+		}		
+	}
 	return status;
 }
 
