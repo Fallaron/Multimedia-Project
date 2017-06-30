@@ -49,8 +49,8 @@ void addtoFalsePositives(double** T);
 
 int main() {
 
-	//std::vector<std::vector<int>> boundingBoxes;	
-	//getBoundingBox(ANNOTATIONTESTFILE, boundingBoxes);
+	std::vector<std::vector<int>> boundingBoxes;	
+	getBoundingBox(ANNOTATIONTESTFILE, boundingBoxes);
 
 	vector<int> pos_feat_dims;
 	vector<int> neg_feat_dims;
@@ -97,10 +97,28 @@ int main() {
 
 	// TEST NON - MAXIMA SUPPRESSION  returns final Bounding box in a single imag.....
 
-	
-	useTestImages(POSTESTFILE, svmModel);
+	string pat = "crop_000001.png"; // Im2.jpeg crop_000001.png
+	cv::Mat img = imread(pat);
+	std::vector<std::vector<float>> final_Box;
+	std::vector<std::vector<float>> dWinfeat = slideOverImage(img, svmModel, false);
+	cout << ".....Detection Window features......" << endl;
+	for (auto &b : dWinfeat) {
+		for (auto v : b) {
+			cout << v << ",";
+		}
+		cout<< endl;
+	}
+	cout << ".....Final bBounding Boxes....." << endl;
 
-	cout << "Programm finished!" << endl;
+	non_Max_Suppression(final_Box, dWinfeat, TEMPLATEWIDTH, TEMPLATEHEIGHT);
+	for (auto &b : final_Box) {
+		for (auto v : b) {
+			cout << v << ",";
+		}
+		cout << endl;
+	}
+
+	is_detection_true(final_Box, 1, TEMPLATEWIDTH, TEMPLATEHEIGHT, boundingBoxes);
 	getchar();
 	return 0;
 }
