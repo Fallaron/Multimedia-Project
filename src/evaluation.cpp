@@ -3,7 +3,7 @@
 using namespace cv;
 using namespace std;
 
-
+#define THRESHOLD 100.0
 
 void fixMaxSupressions(std::vector<std::vector<float>>& final_BBox) {
 	int size = final_BBox.size();
@@ -83,21 +83,20 @@ void non_Max_Suppression(std::vector<std::vector<float>>& final_BBox, std::vecto
 			int pos_x = detWinFeat[i][1] * scale;
 			int pos_y = detWinFeat[i][2] * scale;
 
-			int width = temp_Width * scale; // pos_x2
+			int width = temp_Width * scale;
 			int height = temp_Height * scale;
 
 			cv::Rect current_bBox(pos_x, pos_y, width, height);
 			float current_score = detWinFeat[i][0];
-			// go thrugh all best Boxes in final_bBoxes and determine if there is overlap if no add current bboxe to final_bBox array.
-			// if you  have to replace more than one boxes in the final bBoxes delete 2nd, 3rd etc to be replaced boxes reducing the final_box vector size and avoiding duplicates
+
+			// if you  have to replace more than one boxes in the final bBoxes delete 2nd, 3rd etc to be replaced boxes reducing the final_box vector size and avoiding duplicates	
 			for (int n = 0; n < sel; n++) {
 				int b_x1 = final_BBox[n][0];
 				int b_y1 = final_BBox[n][1];
 				int b_x2 = final_BBox[n][2];
 				int b_y2 = final_BBox[n][3];
 				float stored_score = final_BBox[n][4];
-
-				
+		
 				cv::Rect stored_bBox(b_x1, b_y1, b_x2 - b_x1, b_y2 - b_y1);
 				cv::Rect intersect_rect =  stored_bBox & current_bBox;
 				cv::Rect union_rect =  stored_bBox |  current_bBox;
@@ -109,20 +108,59 @@ void non_Max_Suppression(std::vector<std::vector<float>>& final_BBox, std::vecto
 				// that implies we dont store less than threshold overlaping bboxes in final_bBoxes
 				if (overlap > 0.2) {
 					addNewBox = false;
-					if (del && final_BBox.size() > 1) {
+					
+					if (del && final_BBox.size() != 0) {
 						final_BBox.erase(final_BBox.begin() + n);
 						sel--;
 					}
 					else {
-						//if (current_score < stored_score) {
+						if (current_score < stored_score || current_bBox.area() > stored_bBox.area()) { 
 						// replace up to now best box
 						final_BBox[n][0] = pos_x;
 						final_BBox[n][1] = pos_y;
 						final_BBox[n][2] = width + pos_x;
 						final_BBox[n][3] = height + pos_y;
 						final_BBox[n][4] = current_score;
-						del = true;
-						//}// else suprress this current bbox
+						del = true;				
+						}// else suprress this current bbox
+					}
+				}// smaller rect with in a bigger rect => overlap is very small.. solution.. delete contained rectangle or replace it with bigger one.. or suppress smaller in coming
+				else {
+					/*if ((inters < (stored_bBox.area() + THRESHOLD) && inters >= (stored_bBox.area() - THRESHOLD)) || (inters < (current_bBox.area() + THRESHOLD) && inters >= (current_bBox.area() - THRESHOLD))) {
+						addNewBox = false;
+						if (inters < (stored_bBox.area() + THRESHOLD) && inters >= (stored_bBox.area() - THRESHOLD)) {
+
+							if (del && final_BBox.size() != 0) {
+								final_BBox.erase(final_BBox.begin() + n);
+								sel--;
+							}
+							else {
+								//repalace it
+								final_BBox[n][0] = pos_x;
+								final_BBox[n][1] = pos_y;
+								final_BBox[n][2] = width + pos_x;
+								final_BBox[n][3] = height + pos_y;
+								final_BBox[n][4] = current_score;
+								del = true;
+							}
+						}// else suprress this current bbox => going to the next current box immediately
+					}*/
+					if ((inters / stored_bBox.area()) > 0.5) { //supress almost contained boxes
+						addNewBox = false;
+
+						if (del && final_BBox.size() != 0) {
+							final_BBox.erase(final_BBox.begin() + n);
+							sel--;
+						}
+						else {
+							//repalace it
+							final_BBox[n][0] = pos_x;
+							final_BBox[n][1] = pos_y;
+							final_BBox[n][2] = width + pos_x;
+							final_BBox[n][3] = height + pos_y;
+							final_BBox[n][4] = current_score;
+							del = true;
+						}
 					}
 				}
 			}
@@ -140,9 +178,21 @@ void non_Max_Suppression(std::vector<std::vector<float>>& final_BBox, std::vecto
 			}
 		}
 	}
-	fixMaxSupressions(final_BBox);
-		}
+	final_BBox = cleanBBox(final_BBox);
+	//fixMaxSupressions(final_BBox);
+}
 
+std::vector<std::vector<float>> cleanBBox(std::vector<std::vector<float>> final_BBox) {
+	// remove small boxes whose area is small than 64 * 128 .....
+	double area = 0.0;
+	std::vector<std::vector<float>> Predict_bBox;
+	for (auto &box : final_BBox) {
+		area = (box[2] - box[0]) * (box[3] - box[1]);
+		if (area > (64 * 128))
+			Predict_bBox.push_back(box);
+	}
+	return Predict_bBox;
+}
 
 void showMaximabBoxes(std::vector<std::vector<float>>& final_BBox, string img_Path) {
 	Mat img = imread(img_Path);
@@ -165,8 +215,6 @@ void showMaximabBoxes(std::vector<std::vector<float>>& final_BBox, string img_Pa
 	waitKey();
 
 }
-
-
 
 void detectionWindow_features(std::vector<std::vector<float>>& detWinFeat, int x, int y, float scale, float score) {
 	vector<float> temp;

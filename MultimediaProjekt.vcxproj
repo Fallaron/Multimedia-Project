@@ -135,6 +135,7 @@
     <Image Include="crop_000001.png" />
     <Image Include="Im2.jpeg" />
     <Image Include="Im3.jpg" />
+    <Image Include="person_138.png" />
     <Image Include="pos_ped.jpg" />
   </ItemGroup>
   <ItemGroup>

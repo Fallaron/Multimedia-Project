@@ -58,7 +58,7 @@ int main() {
 	double ** neg_datasetFeatArray;
 
 	cv::Mat responses;
-	string svmModel = "svm_3.0.xml"; //svm10000Linear
+	string svmModel = "svm_3.0.xml"; //svm10000Linear svm_3.0.xml
 	/*
 	get_HoG_feat_trainSets(pos_datasetFeatArray, POSFILE, CELLSIZE, TEMPLATEWIDTH, TEMPLATEHEIGHT, pos_feat_dims, true);
 	get_HoG_feat_trainSets(neg_datasetFeatArray, NEGFILE, CELLSIZE, TEMPLATEWIDTH, TEMPLATEHEIGHT, neg_feat_dims, false);
@@ -97,29 +97,19 @@ int main() {
 
 	// TEST NON - MAXIMA SUPPRESSION  returns final Bounding box in a single imag.....
 
-	string pat = "Im3.jpg"; // Im2.jpeg crop_000001.png person_138.png
+	string pat = "person_138.png "; 
 	cv::Mat img = imread(pat);
 	std::vector<std::vector<float>> final_Box;
 	std::vector<std::vector<float>> dWinfeat = slideOverImage(img, svmModel, false);
 	cout << ".....Detection Window features......" << endl;
-	for (auto &b : dWinfeat) {
-		for (auto v : b) {
-			cout << v << ",";
-		}
-		cout<< endl;
-	}
-	cout << ".....Final bBounding Boxes....." << endl;
 
 	non_Max_Suppression(final_Box, dWinfeat, TEMPLATEWIDTH, TEMPLATEHEIGHT);
-	for (auto &b : final_Box) {
-		for (auto v : b) {
-			cout << v << ",";
-		}
-		cout << endl;
-	}
 
-	//is_detection_true(final_Box, 1, TEMPLATEWIDTH, TEMPLATEHEIGHT, boundingBoxes);
-	getchar();
+	//is_detection_true(boxes, 1, TEMPLATEWIDTH, TEMPLATEHEIGHT, boundingBoxes);
+
+	showMaximabBoxes(final_Box, pat);
+	//useTestImages(POSTESTFILE, svmModel);
+	//getchar();
 	return 0;
 }
 
@@ -221,6 +211,7 @@ void useTestImages(String path, String SVMPath) {
 		std::vector<std::vector<float>> final_Box;
 		std::vector<std::vector<float>> dWinfeat = slideOverImage(img, SVMPath, false);
 		non_Max_Suppression(final_Box, dWinfeat, TEMPLATEWIDTH, TEMPLATEHEIGHT);
+		//std::vector<std::vector<float>> boxes = cleanBBox(final_Box);
 		showMaximabBoxes(final_Box, file);
 
 	}
@@ -316,8 +307,8 @@ std::vector<std::vector<float>> slideOverImage(Mat img, string svm_model_path, b
 					float disVal = predict_pedestrian(vec_featArray, vec_feat_dims, newSVM, x, y, scale, person);
 
 					if (person == true && disVal < DISVALUETRESHOLD) {
-						if (!negTrain)
-							cout << "Found Pedestrain, distance: " << disVal <<endl;
+						/*if (!negTrain)
+							cout << "Found Pedestrain, distance: " << disVal <<endl;*/
 						person = false;
 						show = true;
 						/************added**********/
@@ -355,8 +346,8 @@ std::vector<std::vector<float>> slideOverImage(Mat img, string svm_model_path, b
 
 						imshow("Template", copy);
 						show = false;
-						waitKey(1);
-					}*/
+						waitKey();
+					} */
 					freeHoGFeaturesOnScale(feat);
 					//freeVectorizedFeatureArray(vec_featArray);
 				}
