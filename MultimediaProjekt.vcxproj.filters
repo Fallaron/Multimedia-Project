@@ -61,6 +61,9 @@
     <Image Include="person_138.png">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="crop001607.png">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <None Include="svm.xml3">
