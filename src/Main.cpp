@@ -36,7 +36,7 @@ using namespace cv;
 vector<double**> vFalsePositives;
 
 //initial = 0, see retrain method
-double DISVALUETRESHOLD = -1.4;
+double DISVALUETRESHOLD = -1.2;
 
 std::vector<std::vector<float>> slideOverImage(Mat img, string svmModel, bool negTrain);
 double*** getHOGFeatureArrayOnScaleAt(int x, int y, vector<int> &dims, double *** featArray) throw (int);
@@ -58,7 +58,7 @@ int main() {
 	double ** neg_datasetFeatArray;
 
 	cv::Mat responses;
-	string svmModel = "svm_3.0.xml"; //svm10000Linear svm_3.0.xml
+	string svmModel = "svm_2.0.xml"; //svm10000Linear svm_3.0.xml
 	/*
 	get_HoG_feat_trainSets(pos_datasetFeatArray, POSFILE, CELLSIZE, TEMPLATEWIDTH, TEMPLATEHEIGHT, pos_feat_dims, true);
 	get_HoG_feat_trainSets(neg_datasetFeatArray, NEGFILE, CELLSIZE, TEMPLATEWIDTH, TEMPLATEHEIGHT, neg_feat_dims, false);
@@ -96,6 +96,8 @@ int main() {
 	cout << "... (Enter) to end ..." << endl; */
 
 	// TEST NON - MAXIMA SUPPRESSION  returns final Bounding box in a single imag.....
+	
+	useTestImages(POSTESTFILE, svmModel);
 
 	string pat = "crop001607.png";
 	cv::Mat img = imread(pat);
@@ -130,7 +132,7 @@ int main() {
 		cout << b[0] << "-" << b[1] << "-" << b[2] << "-" << b[3] << "##" << b[4] << endl;
 	}*/
 	
-	showMaximabBoxes(final_Box, pat);
+	
 
 	//useTestImages(POSTESTFILE, svmModel);
 	//getchar();
@@ -230,13 +232,18 @@ void useTestImages(String path, String SVMPath) {
 	ifstream locations;
 	locations.open(path);
 	String file;
+	int c = 0;
+	vector<vector<int>> bBoxes;
+
+	getBoundingBox(ANNOTATIONTESTFILE, bBoxes);
 	while (getline(locations, file)) {
 		Mat img = imread(file);
 		std::vector<std::vector<float>> final_Box;
 		std::vector<std::vector<float>> dWinfeat = slideOverImage(img, SVMPath, false);
 		non_Max_Suppression(final_Box, dWinfeat, TEMPLATEWIDTH, TEMPLATEHEIGHT);
 		//std::vector<std::vector<float>> boxes = cleanBBox(final_Box);
-		showMaximabBoxes(final_Box, file);
+		showMaximabBoxes(final_Box, file, bBoxes[c++]);
+		
 
 	}
 }
