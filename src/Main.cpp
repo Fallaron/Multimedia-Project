@@ -97,7 +97,7 @@ int main() {
 
 	// TEST NON - MAXIMA SUPPRESSION  returns final Bounding box in a single imag.....
 
-	string pat = "person_138.png "; 
+	string pat = "crop001607.png";
 	cv::Mat img = imread(pat);
 	std::vector<std::vector<float>> final_Box;
 	std::vector<std::vector<float>> dWinfeat = slideOverImage(img, svmModel, false);
@@ -107,7 +107,31 @@ int main() {
 
 	//is_detection_true(boxes, 1, TEMPLATEWIDTH, TEMPLATEHEIGHT, boundingBoxes);
 
+	/*for (auto &box : dWinfeat) {
+		std::vector<std::vector<float>> final_Box;
+		double scale1 = box[3];
+		int x1 = box[1] * scale1;
+		int y1 = box[2] * scale1;
+
+		int width = TEMPLATEWIDTH * scale1;
+		int height = TEMPLATEHEIGHT * scale1;
+
+		vector<float> temp;
+		temp.push_back(x1);
+		temp.push_back(y1);
+		temp.push_back(x1 + width);
+		temp.push_back(y1 + height);
+		temp.push_back(box[0]);
+		final_Box.push_back(temp);
+		cout << x1 << "-" << y1 << "-" << temp[2] <<"-"<< temp[3] <<"##"<<box[0]<< endl;
+		showMaximabBoxes(final_Box, pat);
+	}
+	for (auto & b : final_Box) {
+		cout << b[0] << "-" << b[1] << "-" << b[2] << "-" << b[3] << "##" << b[4] << endl;
+	}*/
+	
 	showMaximabBoxes(final_Box, pat);
+
 	//useTestImages(POSTESTFILE, svmModel);
 	//getchar();
 	return 0;

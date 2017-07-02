@@ -2,9 +2,8 @@
 
 using namespace cv;
 using namespace std;
-
-#define THRESHOLD 100.0
-
+#define OVERLAP_THRES 0.3
+#define CONTAINED_THRES 0.5
 void fixMaxSupressions(std::vector<std::vector<float>>& final_BBox) {
 	int size = final_BBox.size();
 	for (int i = 0; i < size; i++) {
@@ -52,7 +51,7 @@ void fixMaxSupressions(std::vector<std::vector<float>>& final_BBox) {
 	}
 }
 
-void non_Max_Suppression(std::vector<std::vector<float>>& final_BBox, std::vector<std::vector<float>> detWinFeat, int temp_Width, int temp_Height) {
+void ôrig_non_Max_Suppression(std::vector<std::vector<float>>& final_BBox, std::vector<std::vector<float>> detWinFeat, int temp_Width, int temp_Height) {
 	final_BBox = std::vector<std::vector<float>>(0);
 	int boxes = detWinFeat.size();
 	float overlap = 0.0;
@@ -61,11 +60,11 @@ void non_Max_Suppression(std::vector<std::vector<float>>& final_BBox, std::vecto
 		//************* initial bBox values ********
 		int sel = 1;
 		double scale = detWinFeat[0][3];
-		int x1 = detWinFeat[0][1] * scale;
-		int y1 = detWinFeat[0][2] * scale;
+		float x1 = detWinFeat[0][1] * scale;
+		float y1 = detWinFeat[0][2] * scale;
 
-		int width = temp_Width * scale;
-		int height = temp_Height * scale;
+		float width = temp_Width * scale;
+		float height = temp_Height * scale;
 
 		vector<float> temp;
 		temp.push_back(x1);
@@ -80,21 +79,21 @@ void non_Max_Suppression(std::vector<std::vector<float>>& final_BBox, std::vecto
 			addNewBox = true;
 			del = false;
 			double scale = detWinFeat[i][3];
-			int pos_x = detWinFeat[i][1] * scale;
-			int pos_y = detWinFeat[i][2] * scale;
+			float pos_x = detWinFeat[i][1] * scale;
+			float pos_y = detWinFeat[i][2] * scale;
 
-			int width = temp_Width * scale;
-			int height = temp_Height * scale;
+			float width = temp_Width * scale;
+			float height = temp_Height * scale;
 
 			cv::Rect current_bBox(pos_x, pos_y, width, height);
 			float current_score = detWinFeat[i][0];
 
 			// if you  have to replace more than one boxes in the final bBoxes delete 2nd, 3rd etc to be replaced boxes reducing the final_box vector size and avoiding duplicates	
 			for (int n = 0; n < sel; n++) {
-				int b_x1 = final_BBox[n][0];
-				int b_y1 = final_BBox[n][1];
-				int b_x2 = final_BBox[n][2];
-				int b_y2 = final_BBox[n][3];
+				float b_x1 = final_BBox[n][0];
+				float b_y1 = final_BBox[n][1];
+				float b_x2 = final_BBox[n][2];
+				float b_y2 = final_BBox[n][3];
 				float stored_score = final_BBox[n][4];
 		
 				cv::Rect stored_bBox(b_x1, b_y1, b_x2 - b_x1, b_y2 - b_y1);
@@ -181,7 +180,140 @@ void non_Max_Suppression(std::vector<std::vector<float>>& final_BBox, std::vecto
 	final_BBox = cleanBBox(final_BBox);
 	//fixMaxSupressions(final_BBox);
 }
+void non_Max_Suppression(std::vector<std::vector<float>>& final_BBox, std::vector<std::vector<float>> detWinFeat, int temp_Width, int temp_Height) {
+	final_BBox = std::vector<std::vector<float>>(0);
+	int boxes = detWinFeat.size();
+	float overlap = 0.0;
+	bool addNewBox = true, del = false, jumpBack = false;
+	if (!detWinFeat.empty()) {
+		//************* initial bBox values ********
+		int sel = 1;
+		double scale = detWinFeat[0][3];
+		float x1 = detWinFeat[0][1] * scale;
+		float y1 = detWinFeat[0][2] * scale;
 
+		float width = temp_Width * scale;
+		float height = temp_Height * scale;
+
+		vector<float> temp;
+		temp.push_back(x1);
+		temp.push_back(y1);
+		temp.push_back(x1 + width);
+		temp.push_back(y1 + height);
+		temp.push_back(detWinFeat[0][0]);
+		final_BBox.push_back(temp);
+		temp.clear();
+
+		for (int i = 1; i < boxes; i++) {
+			addNewBox = true;
+			del = false;
+			const double scale = detWinFeat[i][3];
+			const int pos_x = detWinFeat[i][1] * scale;
+			const int pos_y = detWinFeat[i][2] * scale;
+
+			const int width_c = temp_Width * scale;
+			const int height_c = temp_Height * scale;
+
+			cv::Rect current_bBox(pos_x, pos_y, width_c, height_c);
+			float current_score = detWinFeat[i][0];
+
+			// if current box has to replace more than one boxes delete 2nd, 3rd etc reducing the final_box vector size and avoiding duplicates	
+			for (int n = 0; n < sel; n++) {
+				if (jumpBack) {
+					del = false;
+					jumpBack = false;
+				}
+				const int b_x1 = final_BBox[n][0];
+				const int b_y1 = final_BBox[n][1];
+				const int b_x2 = final_BBox[n][2];
+				const int b_y2 = final_BBox[n][3];
+				const int stored_score = final_BBox[n][4];
+
+				cv::Rect stored_bBox(b_x1, b_y1, b_x2 - b_x1, b_y2 - b_y1);
+				cv::Rect intersect_rect = stored_bBox & current_bBox;
+				cv::Rect union_rect = stored_bBox | current_bBox;
+
+				float inter_Area = intersect_rect.area();
+				float uni = union_rect.area();
+				overlap = inter_Area / uni;
+				float c_Area = current_bBox.area();
+				float s_Area = stored_bBox.area();
+				// go through boxes and consider if overlap
+				if (overlap > OVERLAP_THRES) {
+					addNewBox = false;
+					if (del && final_BBox.size() != 0) {
+						final_BBox.erase(final_BBox.begin() + n);
+						sel--;
+						jumpBack = true;
+						n = 0; //reset loop, box positions have changed in the final vector
+					}
+					else {
+						if (current_score < stored_score || c_Area > s_Area) {
+							// replace up to now best box
+							final_BBox[n][0] = pos_x;
+							final_BBox[n][1] = pos_y;
+							final_BBox[n][2] = width_c + pos_x;
+							final_BBox[n][3] = height_c + pos_y;
+							final_BBox[n][4] = current_score;
+						}					
+						del = true; // else suprress this current bbox
+					}
+				}// smaller rect within a bigger rect => overlap is very small.. solution.. delete contained rectangle or replace it with bigger one.. or suppress smaller in coming
+				else {
+					if (inter_Area == s_Area) { //supress contained boxes
+						addNewBox = false;
+						if (del && final_BBox.size() != 0) {
+							final_BBox.erase(final_BBox.begin() + n);
+							sel--;
+							jumpBack = true;
+							n = 0;
+						}
+						else {
+							//repalace it
+							final_BBox[n][0] = pos_x;
+							final_BBox[n][1] = pos_y;
+							final_BBox[n][2] = width_c + pos_x;
+							final_BBox[n][3] = height_c + pos_y;
+							final_BBox[n][4] = current_score;
+							del = true;
+						}
+					}
+					else if ((inter_Area / s_Area) >  CONTAINED_THRES) { //supress almost contained boxes
+						addNewBox = false;
+						if (del && final_BBox.size() != 0) {
+							final_BBox.erase(final_BBox.begin() + n);
+							sel--; 
+							jumpBack = true;
+							n = 0; // reset loop, box positions have changed in the final vector
+						}
+						else {
+							//repalace it
+							final_BBox[n][0] = pos_x;
+							final_BBox[n][1] = pos_y;
+							final_BBox[n][2] = width_c + pos_x;
+							final_BBox[n][3] = height_c + pos_y;
+							final_BBox[n][4] = current_score;
+							del = true;
+						}
+					}
+				}
+			}
+			// add new bBox.. cud be new pedstrian thus increase the size of final bBoxes
+			if (addNewBox) {
+				sel++;
+				vector<float> temp;
+				temp.push_back(pos_x);
+				temp.push_back(pos_y);
+				temp.push_back(width_c + pos_x);
+				temp.push_back(height_c + pos_y);
+				temp.push_back(current_score);
+				final_BBox.push_back(temp);
+				temp.clear();
+			}
+		}
+	}
+	//fixMaxSupressions(final_BBox);
+}
 std::vector<std::vector<float>> cleanBBox(std::vector<std::vector<float>> final_BBox) {
 	// remove small boxes whose area is small than 64 * 128 .....
 	double area = 0.0;
