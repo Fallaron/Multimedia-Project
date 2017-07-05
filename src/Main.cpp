@@ -36,7 +36,7 @@ using namespace cv;
 vector<double**> vFalsePositives;
 
 //initial = 0, see retrain method
-double DISVALUETRESHOLD = -1.2;
+double DISVALUETRESHOLD = -0.2;
 
 std::vector<std::vector<float>> slideOverImage(Mat img, string svmModel, bool negTrain);
 double*** getHOGFeatureArrayOnScaleAt(int x, int y, vector<int> &dims, double *** featArray) throw (int);
@@ -58,8 +58,8 @@ int main() {
 	double ** neg_datasetFeatArray;
 
 	cv::Mat responses;
-	string svmModel = "svm_2.0.xml"; //svm10000Linear svm_3.0.xml
-	/*
+	string svmModel = "svm_test.xml"; //svm10000Linear svm_3.0.xml
+	
 	get_HoG_feat_trainSets(pos_datasetFeatArray, POSFILE, CELLSIZE, TEMPLATEWIDTH, TEMPLATEHEIGHT, pos_feat_dims, true);
 	get_HoG_feat_trainSets(neg_datasetFeatArray, NEGFILE, CELLSIZE, TEMPLATEWIDTH, TEMPLATEHEIGHT, neg_feat_dims, false);
 	cout << "Got " << pos_feat_dims[0] << " positives and " << neg_feat_dims[0] << " negatives." << endl;
@@ -67,7 +67,7 @@ int main() {
 	CvSVMParams params;
 	params.svm_type = CvSVM::C_SVC;
 	params.kernel_type = CvSVM::LINEAR;
-	params.term_crit = TermCriteria(CV_TERMCRIT_ITER, 100000, 0.00001);
+	params.term_crit = TermCriteria(CV_TERMCRIT_ITER, 10, 0.00001);
 
 	cout << "Training classifier... ";
 	// train
@@ -93,8 +93,8 @@ int main() {
 		}
 	}
 
-	cout << "... (Enter) to end ..." << endl; */
-
+	cout << "... (Enter) to end ..." << endl; 
+		/*
 	// TEST NON - MAXIMA SUPPRESSION  returns final Bounding box in a single imag.....
 	
 	useTestImages(POSTESTFILE, svmModel);
@@ -217,13 +217,14 @@ void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg
 		templFeat = vFalsePositives[f];
 		for (int n = 0; n < 32; n++) {
 			true_neg_feat[f][n] = templFeat[0][n];
+			cout << "templfeat: f:" << f << ", n:" << n << ", val:" << templFeat[0][n];
 		}
 		//TODO: Free double**
 		//freeVectorizedFeatureArray(templFeat);
 	}
 	//TODO: Free vector<double**>
 	cout << "Gathered Hard Negatives!" << endl;
-	train_classifier(pos_feat_array, neg_feat_array, pos_dims, neg_dims, SVMPath, params, true_neg_feat, true_neg_dims);
+	train_classifier(pos_feat_array, neg_feat_array, pos_dims, neg_dims, SVMPath+"-retrained", params, true_neg_feat, true_neg_dims);
 	cout << "Finished retraining" << endl;
 }
 
