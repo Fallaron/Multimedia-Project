@@ -8,6 +8,7 @@
 #define CUTOFF 1
 #define IMG_PATCH_NEG 10
 
+
 using namespace cv;
 using namespace std;
 
@@ -63,57 +64,38 @@ void  getBoundingBox(std::string annotationList, std::vector<std::vector<int>>& 
 	}
 }
 
-bool is_detection_true(std::vector<std::vector<float>> prediction_bBox, int img_index, int temp_Width, int temp_Height, const std::vector<std::vector<int>> boundingBoxes) {
-
-	bool status = false;
-	int pBox_size = prediction_bBox.size();
+int detection_true_count(const std::vector<std::vector<float>> prediction_bBox, const std::vector<int> boundingBoxes) {
 	int gBox_size = boundingBoxes.size();
-	int pos_x;
-	int pos_y;
-	int pos_x2;
-	int pos_y2;
-	int width, height;
+	int overlap_Count = 0;
 	double overlap = 0.0;
 
-	for (int i = 1; i < 2; i++) {
-		// go through in fours.. a an element could more than one bounding boxes
-		int boxes = boundingBoxes[i].size() / 4;
-		for (int k = 0; k < boxes; k += 4) {
-			int x1 = boundingBoxes[i][k];
-			int y1 = boundingBoxes[i][k + 1];
-			int x2 = boundingBoxes[i][k + 2];
-			int y2 = boundingBoxes[i][k + 3];
-			cv::Rect groundtruth_bBox(x1, y1, x2 - x1, y2 - y1);
-			// compare a single to all boxes stored in pred_box for this particular Image
-			for (int p = 0; p < pBox_size; p++) {
-				int num_pBoxes = prediction_bBox[p].size() / 5; // 5 becoz score value is also return.. that can be discarded
-				// go through all predicted bounding boxes until a matching ground truth is found if any.. 
-				for (int n = 0; n < num_pBoxes; n += 5) {
-					pos_x = prediction_bBox[p][n];
-					pos_y = prediction_bBox[p][n+1];
-					pos_x2 = prediction_bBox[p][n+2];
-					pos_y2 = prediction_bBox[p][n+3];
-					width = pos_x2 - pos_x;
-					height = pos_y2 - pos_y;
-					cv::Rect Predicted_bBox(pos_x, pos_y, width, height);
-					cv::Rect intersect_rect = Predicted_bBox & groundtruth_bBox;
-					cv::Rect union_rect = Predicted_bBox | groundtruth_bBox;
-					float intersect = intersect_rect.area();
-					float uni = union_rect.area();
-					overlap = intersect / uni;
-					// if overlap, then change status and continue or store this evaluation data
-					if (overlap > 0.4) {
-						status = true;
-						cout << "True Positive";
-					}
-					else {
-						cout << "False Positive!!";
-					}
-				}
+	for (int k = 0; k < gBox_size; k += 4) {
+		// direct comparison => info is stored contagiously for each image in folder
+		int x1 = boundingBoxes[k];
+		int y1 = boundingBoxes[k + 1];
+		int x2 = boundingBoxes[k + 2];
+		int y2 = boundingBoxes[k + 3];
+		cv::Rect groundtruth_bBox(x1, y1, x2 - x1, y2 - y1);
+		// compare a single to all boxes stored in pred_box for this particular Image
+		// go through all predicted bounding boxes until a matching ground truth is found if any.. 
+		for (auto &box : prediction_bBox) {
+			int pos_x = box[0];
+			int pos_y = box[1];
+			int pos_x2 = box[2];
+			int pos_y2 = box[3];
+
+			cv::Rect Predicted_bBox(pos_x, pos_y, pos_x2 - pos_x, pos_y2 - pos_y);
+			cv::Rect intersect_rect = Predicted_bBox & groundtruth_bBox;
+			cv::Rect union_rect = Predicted_bBox | groundtruth_bBox;
+
+			overlap = (float)intersect_rect.area() / (float)union_rect.area();
+			// for all bounding boxes in prediction boxes vector do this evaluation..
+			if (overlap > 0.5) {
+				overlap_Count++;
 			}
-		}		
+		}
 	}
-	return status;
+	return overlap_Count;
 }
 
 // set boolean to false and path to neg samples to extract neg sample features else extract pos features..

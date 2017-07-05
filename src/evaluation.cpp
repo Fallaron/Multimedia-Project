@@ -1,11 +1,10 @@
 #include "evaluation.h"
-
+#include "features.h"
+#include <string>
 using namespace cv;
 using namespace std;
 #define OVERLAP_THRES 0.2
 #define CONTAINED_THRES 0.5
-
-
 
 void non_Max_Suppression(std::vector<std::vector<float>>& final_BBox, std::vector<std::vector<float>> detWinFeat, int temp_Width, int temp_Height) {
 	final_BBox = std::vector<std::vector<float>>(0);
@@ -141,17 +140,6 @@ void non_Max_Suppression(std::vector<std::vector<float>>& final_BBox, std::vecto
 	}
 	//fixMaxSupressions(final_BBox);
 }
-std::vector<std::vector<float>> cleanBBox(std::vector<std::vector<float>> final_BBox) {
-	// remove small boxes whose area is small than 64 * 128 .....
-	double area = 0.0;
-	std::vector<std::vector<float>> Predict_bBox;
-	for (auto &box : final_BBox) {
-		area = (box[2] - box[0]) * (box[3] - box[1]);
-		if (area > (64 * 128))
-			Predict_bBox.push_back(box);
-	}
-	return Predict_bBox;
-}
 
 void showMaximabBoxes(std::vector<std::vector<float>>& final_BBox, string img_Path, std::vector<int> & bBoxesOrig) {
 	Mat img = imread(img_Path);
@@ -213,3 +201,4 @@ void detectionWindow_features(std::vector<std::vector<float>>& detWinFeat, int x
 	detWinFeat.push_back(temp);
 	temp.clear();
 }
+

@@ -46,11 +46,12 @@ void freeHog(vector<int> dims, double *** feature_Array);
 void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg_feat_array, vector<int> neg_dims, double ** pos_feat_array, vector<int> pos_dims);
 void useTestImages(String path, String SVMPath);
 void addtoFalsePositives(double** T);
+std::vector<std::vector<float>> detection_Evaluation(string dataSet_path, std::vector<string> SVM_Models);
 
 int main() {
 
-	std::vector<std::vector<int>> boundingBoxes;	
-	getBoundingBox(ANNOTATIONTESTFILE, boundingBoxes);
+	//std::vector<std::vector<int>> boundingBoxes;	
+	//getBoundingBox(ANNOTATIONTESTFILE, boundingBoxes);
 
 	vector<int> pos_feat_dims;
 	vector<int> neg_feat_dims;
@@ -58,7 +59,7 @@ int main() {
 	double ** neg_datasetFeatArray;
 
 	cv::Mat responses;
-	string svmModel = "svm_2.0.xml"; //svm10000Linear svm_3.0.xml
+	string svmModel = "svm_2.0.xml"; 
 	/*
 	get_HoG_feat_trainSets(pos_datasetFeatArray, POSFILE, CELLSIZE, TEMPLATEWIDTH, TEMPLATEHEIGHT, pos_feat_dims, true);
 	get_HoG_feat_trainSets(neg_datasetFeatArray, NEGFILE, CELLSIZE, TEMPLATEWIDTH, TEMPLATEHEIGHT, neg_feat_dims, false);
@@ -95,47 +96,21 @@ int main() {
 
 	cout << "... (Enter) to end ..." << endl; */
 
-	// TEST NON - MAXIMA SUPPRESSION  returns final Bounding box in a single imag.....
-	
-	useTestImages(POSTESTFILE, svmModel);
-
-	string pat = "crop001607.png";
-	cv::Mat img = imread(pat);
-	std::vector<std::vector<float>> final_Box;
-	std::vector<std::vector<float>> dWinfeat = slideOverImage(img, svmModel, false);
-	cout << ".....Detection Window features......" << endl;
-
-	non_Max_Suppression(final_Box, dWinfeat, TEMPLATEWIDTH, TEMPLATEHEIGHT);
-
-	//is_detection_true(boxes, 1, TEMPLATEWIDTH, TEMPLATEHEIGHT, boundingBoxes);
-
-	/*for (auto &box : dWinfeat) {
-		std::vector<std::vector<float>> final_Box;
-		double scale1 = box[3];
-		int x1 = box[1] * scale1;
-		int y1 = box[2] * scale1;
-
-		int width = TEMPLATEWIDTH * scale1;
-		int height = TEMPLATEHEIGHT * scale1;
-
-		vector<float> temp;
-		temp.push_back(x1);
-		temp.push_back(y1);
-		temp.push_back(x1 + width);
-		temp.push_back(y1 + height);
-		temp.push_back(box[0]);
-		final_Box.push_back(temp);
-		cout << x1 << "-" << y1 << "-" << temp[2] <<"-"<< temp[3] <<"##"<<box[0]<< endl;
-		showMaximabBoxes(final_Box, pat);
-	}
-	for (auto & b : final_Box) {
-		cout << b[0] << "-" << b[1] << "-" << b[2] << "-" << b[3] << "##" << b[4] << endl;
-	}*/
-	
-	
-
 	//useTestImages(POSTESTFILE, svmModel);
-	//getchar();
+
+	//TEST DETECTION EVALUATION
+
+	std::vector<string> SVM_Models;
+	SVM_Models.push_back("svm_2.0.xml");
+	SVM_Models.push_back("svm_3.0.xml");
+
+	std::vector<std::vector<float>> DET = detection_Evaluation(POSTESTFILE, SVM_Models);
+	for (auto &Val : DET) {
+		//return how many postive detections per svm setting.. as in per threshold if adjustment
+		cout << Val[0] << "#" << Val[1]<< endl;
+	}
+
+	getchar();
 	return 0;
 }
 
@@ -241,13 +216,50 @@ void useTestImages(String path, String SVMPath) {
 		std::vector<std::vector<float>> final_Box;
 		std::vector<std::vector<float>> dWinfeat = slideOverImage(img, SVMPath, false);
 		non_Max_Suppression(final_Box, dWinfeat, TEMPLATEWIDTH, TEMPLATEHEIGHT);
-		//std::vector<std::vector<float>> boxes = cleanBBox(final_Box);
 		showMaximabBoxes(final_Box, file, bBoxes[c++]);
 		
-
 	}
 }
 
+// takes SVM and test Dataset, variate svm threshold computes number of true positives for each setting..
+std::vector<std::vector<float>> detection_Evaluation(string dataSet_path, std::vector<string> SVM_Models) {	
+	int num_gboxes = 0;
+	std::vector<std::vector<float>> detections;
+	std::vector<std::string> dataSet_img_paths;
+	get_dataSet(dataSet_path, dataSet_img_paths);
+
+	vector<vector<int>> bBoxes;
+	getBoundingBox(ANNOTATIONTESTFILE, bBoxes); 
+	//total number of ground truth bounding boxes
+	for (auto &box : bBoxes) {
+		num_gboxes += box.size() / 4;
+	}
+	cout << "Total gBoxes: " << num_gboxes  << endl;
+	// sample vector of DISVALUETRESHOLD...it cud be differently implemented
+	std::vector<double> thresHolds = {-1.1,-1.2};
+
+	for (int i = 0; i < SVM_Models.size(); i++) { // compute for different SVM models
+		//variate the threshold
+		for (int t = 0; t < thresHolds.size(); t++) {
+			// run through the data Set
+			vector<float> temp;
+			int  c = 0, count = 0;
+			for (auto path : dataSet_img_paths) {
+				cv::Mat img = imread(path);
+				std::vector<std::vector<float>> final_Box;
+				// variating the threshold inside slideOverImage affects the final_bBox which in turn affects overlap values, affecting the miss rate
+				std::vector<std::vector<float>> dWinfeat = slideOverImage(img, SVM_Models[i], false); 
+				non_Max_Suppression(final_Box, dWinfeat, TEMPLATEWIDTH, TEMPLATEHEIGHT);
+				count += detection_true_count(final_Box, bBoxes[c++]);			
+			}
+			temp.push_back(count);
+			temp.push_back(thresHolds[t]);
+			detections.push_back(temp);
+			temp.clear();
+		}
+	}
+	return detections;
+}
 
 //scale 0 = just img;
 double*** getHOGFeatureArrayOnScaleAt(int x, int y, vector<int> &dims, double *** featArray) throw (int) {
