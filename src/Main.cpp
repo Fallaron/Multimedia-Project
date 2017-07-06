@@ -96,7 +96,7 @@ int main() {
 	}
 
 
-	cout << "... (Enter) to end ..." << endl; */
+	cout << "... (Enter) to end ..." << endl; 
 
 	//useTestImages(POSTESTFILE, svmModel);
 
