@@ -23,16 +23,18 @@ cv::Mat generate_SVM_trainSet(double **pos_featArray, double** neg_featArray, st
 	// label Dataset
 	responses = cv::Mat(img_total_count, 1, CV_32FC1);
 	int img = 0;
+	int pos = 0;
 	int neg = 0;
 	int true_neg = 0;
 	while (img < img_total_count) {
-		if (img < pos_count) {
-			responses.at<float>(img, 0) = 1;
-			for (int n = 0; n < features; n++) {
-				trainDataSet.at<float>(img, n) = pos_featArray[img][n];
+		if (true_neg < true_neg_count) {
+			responses.at<float>(img, 0) = -1;
+			for (int n = 0; n < trueNeg_features; n++) {
+				trainDataSet.at<float>(img, n) = trueNeg_featArray[true_neg][n];
 			}
+			true_neg++;			
 		}
-		else if (img < pos_count + neg_count) {
+		else if (img < true_neg_count + neg_count) {
 			responses.at<float>(img, 0) = -1;
 			for (int n = 0; n < features; n++) {
 				trainDataSet.at<float>(img, n) = neg_featArray[neg][n];
@@ -40,16 +42,14 @@ cv::Mat generate_SVM_trainSet(double **pos_featArray, double** neg_featArray, st
 			neg++;
 		}
 		else {
-			responses.at<float>(img, 0) = -1;
-			for (int n = 0; n < trueNeg_features; n++) {
-				trainDataSet.at<float>(img, n) = trueNeg_featArray[true_neg][n];
+			responses.at<float>(img, 0) = 1;
+			for (int n = 0; n < features; n++) {
+				trainDataSet.at<float>(img, n) = pos_featArray[pos][n];
 			}
-			true_neg++;
+			pos++;
 		}
 		img++;
 	}
-
-
 	return trainDataSet;
 }
 
@@ -67,6 +67,7 @@ std::string train_classifier(double **pos_featArray, double** neg_featArray, std
 	// pick one image at a time from Mat Data and train the SVM with it and move on to the next till all are done
 	bool model;
 	model = SVM.train_auto(data, responses, varidx, sample, params);
+	//model = SVM.train(data, responses, varidx, sample, params);
 
 	if (model) {
 		SVM.save(SVMModel_Name.c_str());
@@ -147,6 +148,7 @@ double ** vectorize_32_HoG_feature(double ***featArray, int cell_size, int temp_
 		for (int j = 0; j < x_cells; j++) {
 			for (int n = 0; n < num_dims; n++) {
 				vectorised_featArray[0][h++] = featArray[i][j][n];
+				//cout << "i:" << i << ",j:" << j << ",n:" << n << ", val:" << featArray[i][j][n] << endl;
 			}
 		}
 	}
