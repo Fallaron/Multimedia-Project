@@ -64,10 +64,14 @@ void  getBoundingBox(std::string annotationList, std::vector<std::vector<int>>& 
 	}
 }
 
-int detection_true_count(const std::vector<std::vector<float>> prediction_bBox, const std::vector<int> boundingBoxes) {
+std::vector<int> detection_true_count(const std::vector<std::vector<float>> prediction_bBox, const std::vector<int> boundingBoxes) {
 	int gBox_size = boundingBoxes.size();
+	int num_pBoxes = prediction_bBox.size();
+	int false_pos_pBoxes = num_pBoxes; 
 	int overlap_Count = 0;
+	
 	double overlap = 0.0;
+	std::vector<int> res; // stores counts...true and false positives
 
 	for (int k = 0; k < gBox_size; k += 4) {
 		// direct comparison => info is stored contagiously for each image in folder
@@ -78,7 +82,10 @@ int detection_true_count(const std::vector<std::vector<float>> prediction_bBox, 
 		cv::Rect groundtruth_bBox(x1, y1, x2 - x1, y2 - y1);
 		// compare a single to all boxes stored in pred_box for this particular Image
 		// go through all predicted bounding boxes until a matching ground truth is found if any.. 
+		//int num_pBoxes = 0;
+		//false_pos_pBoxes = 0;
 		for (auto &box : prediction_bBox) {
+		
 			int pos_x = box[0];
 			int pos_y = box[1];
 			int pos_x2 = box[2];
@@ -92,10 +99,13 @@ int detection_true_count(const std::vector<std::vector<float>> prediction_bBox, 
 			// for all bounding boxes in prediction boxes vector do this evaluation..
 			if (overlap > 0.5) {
 				overlap_Count++;
+				false_pos_pBoxes -= 1;
 			}
 		}
 	}
-	return overlap_Count;
+	res.push_back(overlap_Count);
+	res.push_back(false_pos_pBoxes);
+	return res;
 }
 
 // set boolean to false and path to neg samples to extract neg sample features else extract pos features..

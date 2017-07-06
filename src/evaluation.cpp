@@ -192,7 +192,7 @@ void showMaximabBoxes(std::vector<std::vector<float>>& final_BBox, string img_Pa
 }
 
 void detectionWindow_features(std::vector<std::vector<float>>& detWinFeat, int x, int y, float scale, float score) {
-	vector<float> temp;
+	std::vector<float> temp;
 	temp.push_back(score);
 	temp.push_back(x);
 	temp.push_back(y);

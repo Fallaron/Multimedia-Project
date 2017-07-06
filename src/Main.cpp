@@ -101,15 +101,16 @@ int main() {
 	//TEST DETECTION EVALUATION
 
 	std::vector<string> SVM_Models;
-	SVM_Models.push_back("svm_2.0.xml");
-	SVM_Models.push_back("svm_3.0.xml");
+	//SVM_Models.push_back("svm_2.0.xml");
+	SVM_Models.push_back("svm_3.1.xml");
 
 	std::vector<std::vector<float>> DET = detection_Evaluation(POSTESTFILE, SVM_Models);
+	cout << "Small data set test" << endl;
+	cout<<"Pos-count | false_Pos | Threshold | bBoxes"<<endl;
 	for (auto &Val : DET) {
-		//return how many postive detections per svm setting.. as in per threshold if adjustment
-		cout << Val[0] << "#" << Val[1]<< endl;
+		//return how many postive detections per svm setting.. as in per threshold if adjusted
+		cout << Val[0] <<"		" << Val[1]<< "	   "<< Val[2] << "	    " << Val[3] << endl;		
 	}
-
 	getchar();
 	return 0;
 }
@@ -223,6 +224,7 @@ void useTestImages(String path, String SVMPath) {
 
 // takes SVM and test Dataset, variate svm threshold computes number of true positives for each setting..
 std::vector<std::vector<float>> detection_Evaluation(string dataSet_path, std::vector<string> SVM_Models) {	
+	
 	int num_gboxes = 0;
 	std::vector<std::vector<float>> detections;
 	std::vector<std::string> dataSet_img_paths;
@@ -234,28 +236,40 @@ std::vector<std::vector<float>> detection_Evaluation(string dataSet_path, std::v
 	for (auto &box : bBoxes) {
 		num_gboxes += box.size() / 4;
 	}
-	cout << "Total gBoxes: " << num_gboxes  << endl;
 	// sample vector of DISVALUETRESHOLD...it cud be differently implemented
-	std::vector<double> thresHolds = {-1.1,-1.2};
+	//std::vector<double> thresHolds = {-1.1,-1.2};
+	int num_thresholds = 10;
+	double threshold_Step = 0.1;
 
 	for (int i = 0; i < SVM_Models.size(); i++) { // compute for different SVM models
 		//variate the threshold
-		for (int t = 0; t < thresHolds.size(); t++) {
-			// run through the data Set
+		DISVALUETRESHOLD = -1.4;
+		for (int t = 0; t < num_thresholds; t++) {	
 			vector<float> temp;
-			int  c = 0, count = 0;
+			int  c = 0, count = 0, false_pos = 0;
+			// run through the data Set
+			int k = 0;
 			for (auto path : dataSet_img_paths) {
 				cv::Mat img = imread(path);
 				std::vector<std::vector<float>> final_Box;
 				// variating the threshold inside slideOverImage affects the final_bBox which in turn affects overlap values, affecting the miss rate
 				std::vector<std::vector<float>> dWinfeat = slideOverImage(img, SVM_Models[i], false); 
 				non_Max_Suppression(final_Box, dWinfeat, TEMPLATEWIDTH, TEMPLATEHEIGHT);
-				count += detection_true_count(final_Box, bBoxes[c++]);			
+				std::vector<int> res = detection_true_count(final_Box, bBoxes[c++]);
+				count += res[0];
+				false_pos += res[1];
+				if (k == 20) //num of images to read
+					break;
+				k++;
 			}
 			temp.push_back(count);
-			temp.push_back(thresHolds[t]);
+			temp.push_back(false_pos);
+			temp.push_back(float(DISVALUETRESHOLD));
+			temp.push_back(num_gboxes);
 			detections.push_back(temp);
 			temp.clear();
+			//adjust threshold
+			DISVALUETRESHOLD += threshold_Step;
 		}
 	}
 	return detections;
