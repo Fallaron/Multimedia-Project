@@ -42,11 +42,11 @@ cv::Mat generate_SVM_trainSet(double **pos_featArray, double** neg_featArray, st
 			neg++;
 		}
 		else {
-			responses.at<float>(img, 0) = -1;
+			responses.at<float>(img, 0) = 1;
 			for (int n = 0; n < features; n++) {
-				trainDataSet.at<float>(img, n) = pos_featArray[img][n];
+				trainDataSet.at<float>(img, n) = pos_featArray[pos][n];
 			}
-			//pos++;
+			pos++;
 		}
 		img++;
 	}
@@ -148,7 +148,7 @@ double ** vectorize_32_HoG_feature(double ***featArray, int cell_size, int temp_
 		for (int j = 0; j < x_cells; j++) {
 			for (int n = 0; n < num_dims; n++) {
 				vectorised_featArray[0][h++] = featArray[i][j][n];
-				cout << "i:" << i << ",j:" << j << ",n:" << n << ", val:" << featArray[i][j][n] << endl;
+				//cout << "i:" << i << ",j:" << j << ",n:" << n << ", val:" << featArray[i][j][n] << endl;
 			}
 		}
 	}
