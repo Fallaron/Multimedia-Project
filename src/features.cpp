@@ -97,7 +97,7 @@ std::vector<int> detection_true_count(const std::vector<std::vector<float>> pred
 
 			overlap = (float)intersect_rect.area() / (float)union_rect.area();
 			// for all bounding boxes in prediction boxes vector do this evaluation..
-			if (overlap > 0.5) {
+			if (overlap > 0.40) {
 				overlap_Count++;
 				false_pos_pBoxes -= 1;
 			}

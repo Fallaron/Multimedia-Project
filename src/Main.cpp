@@ -47,12 +47,13 @@ void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg
 void useTestImages(String path, String SVMPath);
 void addtoFalsePositives(double** T);
 std::vector<std::vector<float>> detection_Evaluation(string dataSet_path, std::vector<string> SVM_Models);
+void detection_Evaluation_Graphical(string dataSet_path, std::vector<string> SVM_Models);
 
 int main() {
 
 	//std::vector<std::vector<int>> boundingBoxes;	
 	//getBoundingBox(ANNOTATIONTESTFILE, boundingBoxes);
-
+	/*
 	vector<int> pos_feat_dims;
 	vector<int> neg_feat_dims;
 	double ** pos_datasetFeatArray;
@@ -99,20 +100,15 @@ int main() {
 	cout << "... (Enter) to end ..." << endl; 
 
 	//useTestImages(POSTESTFILE, svmModel);
-
+	*/
 	//TEST DETECTION EVALUATION
 
 	std::vector<string> SVM_Models;
-	//SVM_Models.push_back("svm_2.0.xml");
-	SVM_Models.push_back("svm_3.1.xml");
+	SVM_Models.push_back("svm_6.0.xml");
+	SVM_Models.push_back("svm_6.1.xml");
 
-	std::vector<std::vector<float>> DET = detection_Evaluation(POSTESTFILE, SVM_Models);
-	cout << "Small data set test" << endl;
-	cout<<"Pos-count | false_Pos | Threshold | bBoxes"<<endl;
-	for (auto &Val : DET) {
-		//return how many postive detections per svm setting.. as in per threshold if adjusted
-		cout << Val[0] <<"		" << Val[1]<< "	   "<< Val[2] << "	    " << Val[3] << endl;		
-	}
+	detection_Evaluation_Graphical(POSTESTFILE, SVM_Models);
+	cout << "finished\n";
 	getchar();
 	return 0;
 }
@@ -241,12 +237,12 @@ std::vector<std::vector<float>> detection_Evaluation(string dataSet_path, std::v
 	}
 	// sample vector of DISVALUETRESHOLD...it cud be differently implemented
 	//std::vector<double> thresHolds = {-1.1,-1.2};
-	int num_thresholds = 10;
-	double threshold_Step = 0.1;
+	int num_thresholds = 20;
+	double threshold_Step = -0.1;
 
 	for (int i = 0; i < SVM_Models.size(); i++) { // compute for different SVM models
 		//variate the threshold
-		DISVALUETRESHOLD = -1.4;
+		DISVALUETRESHOLD = -0.5;
 		for (int t = 0; t < num_thresholds; t++) {	
 			vector<float> temp;
 			int  c = 0, count = 0, false_pos = 0;
@@ -261,13 +257,11 @@ std::vector<std::vector<float>> detection_Evaluation(string dataSet_path, std::v
 				std::vector<int> res = detection_true_count(final_Box, bBoxes[c++]);
 				count += res[0];
 				false_pos += res[1];
-				if (k == 20) //num of images to read
-					break;
-				k++;
 			}
+			temp.push_back(float(i));
+			temp.push_back(float(DISVALUETRESHOLD));
 			temp.push_back(count);
 			temp.push_back(false_pos);
-			temp.push_back(float(DISVALUETRESHOLD));
 			temp.push_back(num_gboxes);
 			detections.push_back(temp);
 			temp.clear();
@@ -276,6 +270,23 @@ std::vector<std::vector<float>> detection_Evaluation(string dataSet_path, std::v
 		}
 	}
 	return detections;
+}
+
+void detection_Evaluation_Graphical(string dataSet_path, std::vector<string> SVM_Models) {
+	std::vector<std::vector<float>> DET = detection_Evaluation(dataSet_path, SVM_Models);
+	ofstream det;
+	det.open("detections.txt");
+	for (auto &Val : DET) {
+		det << Val[0] << "\n" << Val[1] << "\n" << Val[2] << "\n" << Val[3] << "\n" << Val[4] << endl;
+	}
+	det.close();
+
+	string filename = "detections.txt ";
+	string commando = "python ";
+	string scriptname = "MMPScript.py ";
+	commando += scriptname + filename;
+	system(commando.c_str());
+
 }
 
 //scale 0 = just img;
