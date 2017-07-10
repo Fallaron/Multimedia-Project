@@ -18,6 +18,9 @@
 #define TEMPLATEHEIGHT 128
 #define LAMDA 5
 
+#define ITERATIONS 500000
+#define EPSILON 0.00001
+
 #define POSFILE "pos.lst"
 #define NEGFILE "neg.lst"
 #define POSLESSFILE "pos_less.lst"
@@ -51,66 +54,216 @@ double DISVALUETRESHOLD = -1.2;
 
 int main() {
 
-	//std::vector<std::vector<int>> boundingBoxes;	
-	//getBoundingBox(ANNOTATIONTESTFILE, boundingBoxes);
-	/*
-	vector<int> pos_feat_dims;
-	vector<int> neg_feat_dims;
-	double ** pos_datasetFeatArray;
-	double ** neg_datasetFeatArray;
+	bool train = false;
+	bool test = false;
+	bool eval = false;
+	//not used yet
+	bool dynamic_threshold = false;
 
-	cv::Mat responses;
+	bool exit = false;
 
-	string svmModel = "svm_2.0.xml"; 
-
-	get_HoG_feat_trainSets(pos_datasetFeatArray, POSFILE, CELLSIZE, TEMPLATEWIDTH, TEMPLATEHEIGHT, pos_feat_dims, true);
-	get_HoG_feat_trainSets(neg_datasetFeatArray, NEGFILE, CELLSIZE, TEMPLATEWIDTH, TEMPLATEHEIGHT, neg_feat_dims, false);
-	cout << "Got " << pos_feat_dims[0] << " positives and " << neg_feat_dims[0] << " negatives." << endl;
-
-	CvSVMParams params;
-	params.svm_type = CvSVM::C_SVC;
-	params.kernel_type = CvSVM::LINEAR;
-	params.term_crit = TermCriteria(CV_TERMCRIT_ITER, 10, 0.00001);
-
-	cout << "Training classifier... ";
-	// train
-	train_classifier(pos_datasetFeatArray, neg_datasetFeatArray, pos_feat_dims, neg_feat_dims, svmModel, params);
-	cout << "done!" << endl;
-	
-	bool satisfied = false;
-	// retrain
-	while (!satisfied) {
-		cout << "Retraining... " << endl;
-		retrainModel(params, NEGFILE, svmModel, neg_datasetFeatArray, neg_feat_dims, pos_datasetFeatArray, pos_feat_dims);
-		cout << "Retraning done!" << endl;
-		// test
-		//useTestImages(POSTESTFILE, svmModel); 
+	while (true) {
+		cout << "choose what you want to do:" << endl;
+		cout << "do you want to train an svm (1), test an svm (2), draw a graphical eval (3) or exit (4)? ";
+		bool set = false;
 		string input = "";
-		getline(cin, input);
-		cout << "Test your svm... are you satisfied? (y/n)";
-		while (input.empty()) {
+		while (!set) {
 			getline(cin, input);
+			while (input.empty()) {
+				getline(cin, input);
+			}
+			try {
+				int i = stoi(input);
+				switch (i) {
+				case 1:
+					train = true;
+					break;
+				case 2:
+					test = true;
+					break;
+				case 3:
+					eval = true;
+					break;
+				case 4:
+					exit = true;
+					break;
+				default:
+					continue;
+				}
+				set = true;
+			}
+			catch (const invalid_argument e) {
+				continue;
+			}
 		}
-		if (input == "y") {
-			satisfied = true;
+
+		string svmModel;
+		if (!exit) {
+			cout << "Enter the svm file name you want to use. for eval and training, just enter until the primary number (e.g. svm_6), for testing the full name (e.g. svm_6.1.xml): ";
+			set = false;
+			input = "";
+			getline(cin, input);
+			while (input.empty()) {
+				getline(cin, input);
+			}
+			svmModel = input; // "svm_2.0.xml";
 		}
+
+		if (train) {
+			int iterations;
+			double epsilon;
+
+			cout << "training ..." << endl;
+
+			cout << "select iterations, default is " << ITERATIONS << ": ";
+			set = false;
+			input = "";
+			while (!set) {
+				getline(cin, input);
+				if (input.empty()) {
+					iterations = ITERATIONS;
+				}
+				else {
+					try {
+						int i = stoi(input);
+						iterations = i;
+					}
+					catch (const invalid_argument e) {
+						continue;
+					}					
+				}
+				set = true;
+			}
+
+			cout << "select epsilon, default is " << EPSILON << ": ";
+			set = false;
+			input = "";
+			while (!set) {
+				getline(cin, input);
+				if (input.empty()) {
+					epsilon = EPSILON;
+				}
+				else {
+					try {
+						int i = stoi(input);
+						epsilon = i;
+					}
+					catch (const invalid_argument e) {
+						continue;
+					}
+				}
+				set = true;
+			}
+
+			cout << "select disvaluethreshold, default is " << DISVALUETRESHOLD << ": ";
+			set = false;
+			input = "";
+			while (!set) {
+				getline(cin, input);
+				if (input.empty()) {
+					// do nothing
+				}
+				else {
+					try {
+						int i = stoi(input);
+						DISVALUETRESHOLD = i;
+					}
+					catch (const invalid_argument e) {
+						continue;
+					}
+				}
+				set = true;
+			}
+
+			cout << "should disvaluethreshold be adjusted dynamically? (y/n): ";
+			set = false;
+			input = "";
+			while (!set) {
+				getline(cin, input);
+				if (input.empty()) {
+					continue;
+				}
+				else {
+					if (input == "y") {
+						dynamic_threshold = true;
+					}
+					else if (input == "n") {
+						dynamic_threshold = false;
+					}
+					else {
+						continue;
+					}
+				}
+				set = true;
+			}
+			
+			vector<std::vector<int>> boundingBoxes;
+			getBoundingBox(ANNOTATIONTESTFILE, boundingBoxes);
+
+			vector<int> pos_feat_dims;
+			vector<int> neg_feat_dims;
+			double ** pos_datasetFeatArray;
+			double ** neg_datasetFeatArray;
+
+			Mat responses;
+			get_HoG_feat_trainSets(pos_datasetFeatArray, POSFILE, CELLSIZE, TEMPLATEWIDTH, TEMPLATEHEIGHT, pos_feat_dims, true);
+			get_HoG_feat_trainSets(neg_datasetFeatArray, NEGFILE, CELLSIZE, TEMPLATEWIDTH, TEMPLATEHEIGHT, neg_feat_dims, false);
+			cout << "Got " << pos_feat_dims[0] << " positives and " << neg_feat_dims[0] << " negatives." << endl;
+
+			CvSVMParams params;
+			params.svm_type = CvSVM::C_SVC;
+			params.kernel_type = CvSVM::LINEAR;
+			params.term_crit = TermCriteria(CV_TERMCRIT_ITER, iterations, epsilon);
+
+			cout << "Training classifier... ";
+			
+			// train
+			train_classifier(pos_datasetFeatArray, neg_datasetFeatArray, pos_feat_dims, neg_feat_dims, svmModel+".0.xml", params);
+			cout << "done!" << endl;
+
+			bool satisfied = false;
+			// retrain
+			while (!satisfied) {
+				cout << "Retraining... " << endl;
+				retrainModel(params, NEGFILE, svmModel+".1.xml", neg_datasetFeatArray, neg_feat_dims, pos_datasetFeatArray, pos_feat_dims);
+				cout << "Retraning done!" << endl;
+				// test
+				//useTestImages(POSTESTFILE, svmModel); 
+				string input = "";
+				getline(cin, input);
+				cout << "Test your svm... are you satisfied? (y/n)";
+				while (input.empty()) {
+					getline(cin, input);
+				}
+				if (input == "y") {
+					satisfied = true;
+				}
+			}
+		}
+
+		if (test) {
+			useTestImages(POSTESTFILE, svmModel);
+		}
+
+		if (eval) {
+			//TEST DETECTION EVALUATION
+			std::vector<string> SVM_Models;
+			SVM_Models.push_back(svmModel+".0.xml");
+			SVM_Models.push_back(svmModel+".1.xml");
+
+			detection_Evaluation_Graphical(POSTESTFILE, SVM_Models);
+		}
+
+		cout << "finished" << endl;
+		getchar();
+
+		if (exit) {
+			return 0;
+		}
+
+		//again and again
+		continue;
 	}
-
-
-	cout << "... (Enter) to end ..." << endl; 
-
-	//useTestImages(POSTESTFILE, svmModel);
-	*/
-	//TEST DETECTION EVALUATION
-	
-	std::vector<string> SVM_Models;
-	SVM_Models.push_back("svm_5.0.xml");
-	SVM_Models.push_back("svm_5.1.xml");
-
-	detection_Evaluation_Graphical(POSTESTFILE, SVM_Models);
-	cout << "finished\n";
-	getchar();
-	return 0;
 }
 
 void addtoFalsePositives(double** T) {
@@ -138,7 +291,7 @@ void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg
 	cout << "Setting: desiredTrueNegCout:" << desiredTureNegCount << ", upper bound:" << upper_bound << ", lower bound:" << lower_bound << endl;
 
 	bool treshold_found = false;
-	//DISVALUETRESHOLD = -0.39;
+	
 	while (!treshold_found && DISVALUETRESHOLD <= 0) {
 		locations.open(path);
 		for (int i = 0; i < vFalsePositives.size(); i++) {
@@ -176,8 +329,10 @@ void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg
 		}
 	}
 	cout << "Selected threshold " << DISVALUETRESHOLD << " with " << vFalsePositives.size() << " true_negs" << endl;
+
 	true_neg_dims.push_back(vFalsePositives.size());
 	true_neg_dims.push_back(32);
+
 	double ** true_neg_feat = (double**)calloc(vFalsePositives.size(), sizeof(double*));
 
 
@@ -214,8 +369,7 @@ void useTestImages(String path, String SVMPath) {
 		std::vector<std::vector<float>> final_Box;
 		std::vector<std::vector<float>> dWinfeat = slideOverImage(img, SVMPath, false);
 		non_Max_Suppression(final_Box, dWinfeat, TEMPLATEWIDTH, TEMPLATEHEIGHT);
-		showMaximabBoxes(final_Box, img, bBoxes[c++]);
-		
+		showMaximabBoxes(final_Box, img, bBoxes[c++]);		
 	}
 }
 
