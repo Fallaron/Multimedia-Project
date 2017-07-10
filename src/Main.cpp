@@ -10,8 +10,6 @@
 #include "trainer.h"
 #include "evaluation.h"
 
-
-
 #define ALLOCATIONFAULT -666
 #define TEMPLATEFAILUREWIDTH -20
 #define TEMPLATEFAILUREHEIGHT -21
@@ -19,10 +17,11 @@
 #define TEMPLATEWIDTH 64
 #define TEMPLATEHEIGHT 128
 #define LAMDA 5
-//#define DISVALUETRESHOLD -0.1
+
 #define POSFILE "pos.lst"
 #define NEGFILE "neg.lst"
-
+#define POSLESSFILE "pos_less.lst"
+#define NEGLESSFILE "neg_less.lst"
 #define POSTESTFILE "Testpos.lst"
 #define NEGTESTFILE "Testneg.lst"
 #define ANNOTATIONTESTFILE "Testannotations.lst"
@@ -30,14 +29,8 @@
 //should be 2^n for better hog aggregation
 #define CELLSIZE 8
 
-
 using namespace std;
 using namespace cv;
-
-vector<double**> vFalsePositives;
-
-//initial = 0, see retrain method
-double DISVALUETRESHOLD = -1.2;
 
 std::vector<std::vector<float>> slideOverImage(Mat img, string svmModel, bool negTrain);
 double*** getHOGFeatureArrayOnScaleAt(int x, int y, vector<int> &dims, double *** featArray) throw (int);
@@ -50,6 +43,12 @@ void addtoFalsePositives(double** T);
 std::vector<std::vector<float>> detection_Evaluation(string dataSet_path, std::vector<string> SVM_Models);
 void detection_Evaluation_Graphical(string dataSet_path, std::vector<string> SVM_Models);
 vector<Mat> getImageVector(string dataSet_path);
+
+vector<double**> vFalsePositives;
+
+//initial = 0, see retrain method
+double DISVALUETRESHOLD = -1.2;
+
 int main() {
 
 	//std::vector<std::vector<int>> boundingBoxes;	
@@ -113,7 +112,6 @@ int main() {
 	getchar();
 	return 0;
 }
-
 
 void addtoFalsePositives(double** T) {
 	vFalsePositives.push_back(T);
@@ -290,7 +288,6 @@ void detection_Evaluation_Graphical(string dataSet_path, std::vector<string> SVM
 
 }
 
-
 vector<Mat> getImageVector(string dataSet_path) {
 	std::vector<std::string> dataSet_img_paths;
 	get_dataSet(dataSet_path, dataSet_img_paths);
@@ -367,8 +364,6 @@ std::vector<std::vector<float>> slideOverImage(Mat img, string svm_model_path, b
 	newSVM->load(svm_model_path.c_str());
 
 	while (img.cols > TEMPLATEWIDTH && img.rows > TEMPLATEHEIGHT) {
-		
-
 		vector<int> dims;
 
 		//********* added **********
@@ -447,8 +442,6 @@ std::vector<std::vector<float>> slideOverImage(Mat img, string svm_model_path, b
 				}
 			}
 		}
-
-
 		//downsample
 
 		//imshow("Test", img);
@@ -471,10 +464,8 @@ std::vector<std::vector<float>> slideOverImage(Mat img, string svm_model_path, b
 		//cout << "Width: " << img.size().width << " -- Height: " << img.size().height << endl;
 		freeHog(dims, featArray);
 	}
-
 	return detectionWinFeat;
 }
-
 
 void freeHog(vector<int> dims, double *** feature_Array) {
 	for (int i = 0; i < dims[0]; i++) {
@@ -493,7 +484,6 @@ void freeHoGFeaturesOnScale(double*** feat) {
 		delete[] feat[i];
 	}
 	delete[] feat;
-
 }
 
 void freeVectorizedFeatureArray(double ** v_feat) {
