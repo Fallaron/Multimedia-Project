@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <omp.h>
 #include <opencv2\core.hpp>
 #include <opencv2\imgproc.hpp>
 #include <opencv2\highgui.hpp>
@@ -36,7 +37,7 @@ using namespace cv;
 vector<double**> vFalsePositives;
 
 //initial = 0, see retrain method
-double DISVALUETRESHOLD = -0.2;
+double DISVALUETRESHOLD = -1.2;
 
 std::vector<std::vector<float>> slideOverImage(Mat img, string svmModel, bool negTrain);
 double*** getHOGFeatureArrayOnScaleAt(int x, int y, vector<int> &dims, double *** featArray) throw (int);
@@ -48,7 +49,7 @@ void useTestImages(String path, String SVMPath);
 void addtoFalsePositives(double** T);
 std::vector<std::vector<float>> detection_Evaluation(string dataSet_path, std::vector<string> SVM_Models);
 void detection_Evaluation_Graphical(string dataSet_path, std::vector<string> SVM_Models);
-
+vector<Mat> getImageVector(string dataSet_path);
 int main() {
 
 	//std::vector<std::vector<int>> boundingBoxes;	
@@ -102,10 +103,10 @@ int main() {
 	//useTestImages(POSTESTFILE, svmModel);
 	*/
 	//TEST DETECTION EVALUATION
-
+	
 	std::vector<string> SVM_Models;
-	SVM_Models.push_back("svm_6.0.xml");
-	SVM_Models.push_back("svm_6.1.xml");
+	SVM_Models.push_back("svm_5.0.xml");
+	SVM_Models.push_back("svm_5.1.xml");
 
 	detection_Evaluation_Graphical(POSTESTFILE, SVM_Models);
 	cout << "finished\n";
@@ -209,14 +210,13 @@ void useTestImages(String path, String SVMPath) {
 	String file;
 	int c = 0;
 	vector<vector<int>> bBoxes;
-
+	vector<Mat> images = getImageVector(path);
 	getBoundingBox(ANNOTATIONTESTFILE, bBoxes);
-	while (getline(locations, file)) {
-		Mat img = imread(file);
+	for (auto img: images) {
 		std::vector<std::vector<float>> final_Box;
 		std::vector<std::vector<float>> dWinfeat = slideOverImage(img, SVMPath, false);
 		non_Max_Suppression(final_Box, dWinfeat, TEMPLATEWIDTH, TEMPLATEHEIGHT);
-		showMaximabBoxes(final_Box, file, bBoxes[c++]);
+		showMaximabBoxes(final_Box, img, bBoxes[c++]);
 		
 	}
 }
@@ -226,8 +226,7 @@ std::vector<std::vector<float>> detection_Evaluation(string dataSet_path, std::v
 	
 	int num_gboxes = 0;
 	std::vector<std::vector<float>> detections;
-	std::vector<std::string> dataSet_img_paths;
-	get_dataSet(dataSet_path, dataSet_img_paths);
+
 
 	vector<vector<int>> bBoxes;
 	getBoundingBox(ANNOTATIONTESTFILE, bBoxes); 
@@ -240,6 +239,8 @@ std::vector<std::vector<float>> detection_Evaluation(string dataSet_path, std::v
 	int num_thresholds = 20;
 	double threshold_Step = -0.1;
 
+	vector<Mat> images = getImageVector(dataSet_path);
+
 	for (int i = 0; i < SVM_Models.size(); i++) { // compute for different SVM models
 		//variate the threshold
 		DISVALUETRESHOLD = -0.5;
@@ -248,11 +249,11 @@ std::vector<std::vector<float>> detection_Evaluation(string dataSet_path, std::v
 			int  c = 0, count = 0, false_pos = 0;
 			// run through the data Set
 			int k = 0;
-			for (auto path : dataSet_img_paths) {
-				cv::Mat img = imread(path);
+			for (auto img : images) {
+				
 				std::vector<std::vector<float>> final_Box;
 				// variating the threshold inside slideOverImage affects the final_bBox which in turn affects overlap values, affecting the miss rate
-				std::vector<std::vector<float>> dWinfeat = slideOverImage(img, SVM_Models[i], false); 
+				std::vector<std::vector<float>> dWinfeat = slideOverImage(img, SVM_Models[i],false); 
 				non_Max_Suppression(final_Box, dWinfeat, TEMPLATEWIDTH, TEMPLATEHEIGHT);
 				std::vector<int> res = detection_true_count(final_Box, bBoxes[c++]);
 				count += res[0];
@@ -287,6 +288,18 @@ void detection_Evaluation_Graphical(string dataSet_path, std::vector<string> SVM
 	commando += scriptname + filename;
 	system(commando.c_str());
 
+}
+
+
+vector<Mat> getImageVector(string dataSet_path) {
+	std::vector<std::string> dataSet_img_paths;
+	get_dataSet(dataSet_path, dataSet_img_paths);
+	vector<Mat> images;
+	for (auto path : dataSet_img_paths) {
+		Mat img = imread(path);
+		images.push_back(img);
+	}
+	return images;
 }
 
 //scale 0 = just img;
@@ -366,6 +379,7 @@ std::vector<std::vector<float>> slideOverImage(Mat img, string svm_model_path, b
 
 		double *** featArray = computeHoG(img, CELLSIZE, dims);
 		//cout << dims[0] << ":" << dims[1] << ":" << dims[2] << endl;
+
 		for (int y = CELLSIZE; y < imgheight - TEMPLATEHEIGHT; y += CELLSIZE) {
 			for (int x = CELLSIZE; x < imgwidth - TEMPLATEWIDTH; x += CELLSIZE) {
 				//x,y for HOGfeature in Template

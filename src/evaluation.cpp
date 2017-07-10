@@ -29,7 +29,6 @@ void non_Max_Suppression(std::vector<std::vector<float>>& final_BBox, std::vecto
 		temp.push_back(detWinFeat[0][0]);
 		final_BBox.push_back(temp);
 		temp.clear();
-
 		for (int i = 1; i < boxes; i++) {
 			addNewBox = true;
 			del = false;
@@ -141,8 +140,8 @@ void non_Max_Suppression(std::vector<std::vector<float>>& final_BBox, std::vecto
 	//fixMaxSupressions(final_BBox);
 }
 
-void showMaximabBoxes(std::vector<std::vector<float>>& final_BBox, string img_Path, std::vector<int> & bBoxesOrig) {
-	Mat img = imread(img_Path);
+void showMaximabBoxes(std::vector<std::vector<float>>& final_BBox, Mat img, std::vector<int> & bBoxesOrig) {
+	
 	float overlap = 0;
 	if (img.empty())
 		return;
