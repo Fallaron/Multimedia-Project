@@ -348,7 +348,6 @@ void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg
 		templFeat = vFalsePositives[f];
 		for (int n = 0; n < 32; n++) {
 			true_neg_feat[f][n] = templFeat[0][n];
-			cout << "templfeat: f:" << f << ", n:" << n << ", val:" << templFeat[0][n];
 		}
 		//TODO: Free double**
 		//freeVectorizedFeatureArray(templFeat);
