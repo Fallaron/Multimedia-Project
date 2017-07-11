@@ -64,7 +64,7 @@ void  getBoundingBox(std::string annotationList, std::vector<std::vector<int>>& 
 	}
 }
 
-std::vector<int> detection_true_count(const std::vector<std::vector<float>> prediction_bBox, const std::vector<int> boundingBoxes) {
+std::vector<int> detection_true_count(const std::vector<std::vector<float>> prediction_bBox, const std::vector<int> boundingBoxes, bool betterDetect) {
 	int gBox_size = boundingBoxes.size();
 	int num_pBoxes = prediction_bBox.size();
 	int false_pos_pBoxes = num_pBoxes; 
@@ -97,7 +97,11 @@ std::vector<int> detection_true_count(const std::vector<std::vector<float>> pred
 
 			overlap = (float)intersect_rect.area() / (float)union_rect.area();
 			// for all bounding boxes in prediction boxes vector do this evaluation..
-			if (overlap > 0.40) {
+			if (overlap > 0.50) {
+				overlap_Count++;
+				false_pos_pBoxes -= 1;
+			}
+			else if (((float)(intersect_rect.area() == (float)groundtruth_bBox.area()))&& betterDetect) {
 				overlap_Count++;
 				false_pos_pBoxes -= 1;
 			}

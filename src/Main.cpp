@@ -43,8 +43,8 @@ void freeHog(vector<int> dims, double *** feature_Array);
 void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg_feat_array, vector<int> neg_dims, double ** pos_feat_array, vector<int> pos_dims);
 void useTestImages(String path, String SVMPath);
 void addtoFalsePositives(double** T);
-std::vector<std::vector<float>> detection_Evaluation(string dataSet_path, std::vector<string> SVM_Models);
-void detection_Evaluation_Graphical(string dataSet_path, std::vector<string> SVM_Models);
+std::vector<std::vector<float>> detection_Evaluation(string dataSet_path, std::vector<string> SVM_Models, bool betterDetect);
+void detection_Evaluation_Graphical(string dataSet_path, std::vector<string> SVM_Models, bool betterDetection);
 vector<Mat> getImageVector(string dataSet_path);
 
 vector<double**> vFalsePositives;
@@ -250,8 +250,10 @@ int main() {
 			std::vector<string> SVM_Models;
 			SVM_Models.push_back(svmModel+".0.xml");
 			SVM_Models.push_back(svmModel+".1.xml");
+			
+				detection_Evaluation_Graphical(POSTESTFILE, SVM_Models, true );
+			
 
-			detection_Evaluation_Graphical(POSTESTFILE, SVM_Models);
 		}
 
 		cout << "finished" << endl;
@@ -374,7 +376,7 @@ void useTestImages(String path, String SVMPath) {
 }
 
 // takes SVM and test Dataset, variate svm threshold computes number of true positives for each setting..
-std::vector<std::vector<float>> detection_Evaluation(string dataSet_path, std::vector<string> SVM_Models) {	
+std::vector<std::vector<float>> detection_Evaluation(string dataSet_path, std::vector<string> SVM_Models, bool betterDetection) {	
 	
 	int num_gboxes = 0;
 	std::vector<std::vector<float>> detections;
@@ -407,7 +409,7 @@ std::vector<std::vector<float>> detection_Evaluation(string dataSet_path, std::v
 				// variating the threshold inside slideOverImage affects the final_bBox which in turn affects overlap values, affecting the miss rate
 				std::vector<std::vector<float>> dWinfeat = slideOverImage(img, SVM_Models[i],false); 
 				non_Max_Suppression(final_Box, dWinfeat, TEMPLATEWIDTH, TEMPLATEHEIGHT);
-				std::vector<int> res = detection_true_count(final_Box, bBoxes[c++]);
+				std::vector<int> res = detection_true_count(final_Box, bBoxes[c++], betterDetection);
 				count += res[0];
 				false_pos += res[1];
 			}
@@ -425,8 +427,8 @@ std::vector<std::vector<float>> detection_Evaluation(string dataSet_path, std::v
 	return detections;
 }
 
-void detection_Evaluation_Graphical(string dataSet_path, std::vector<string> SVM_Models) {
-	std::vector<std::vector<float>> DET = detection_Evaluation(dataSet_path, SVM_Models);
+void detection_Evaluation_Graphical(string dataSet_path, std::vector<string> SVM_Models, bool betterDetection) {
+	std::vector<std::vector<float>> DET = detection_Evaluation(dataSet_path, SVM_Models, betterDetection);
 	ofstream det;
 	det.open("detections.txt");
 	for (auto &Val : DET) {
@@ -530,6 +532,8 @@ std::vector<std::vector<float>> slideOverImage(Mat img, string svm_model_path, b
 		//cout << dims[0] << ":" << dims[1] << ":" << dims[2] << endl;
 
 		for (int y = CELLSIZE; y < imgheight - TEMPLATEHEIGHT; y += CELLSIZE) {
+
+			printf("thread num %d\n", omp_get_thread_num());
 			for (int x = CELLSIZE; x < imgwidth - TEMPLATEWIDTH; x += CELLSIZE) {
 				//x,y for HOGfeature in Template
 				try {
@@ -559,47 +563,16 @@ std::vector<std::vector<float>> slideOverImage(Mat img, string svm_model_path, b
 						//no false positive or not training negative, free featArray
 						freeVectorizedFeatureArray(vec_featArray);
 					}
-					// SLIDE OVER IMAGE NO LONGER SHOWS IMAGES!
-					/*if (show && !negTrain) {
-						double scale = pow(scalingfactor, stage);
-						Scalar green(0, 255, 0);
-
-						int templatew = TEMPLATEWIDTH;
-						templatew *= scale;
-						int templateh = TEMPLATEHEIGHT;
-						templateh *= scale;
-						int newx = x* scale;
-						int newy = y* scale;
-						Mat copy;
-						src.copyTo(copy);
-						Point tl(newx, newy);
-						Point br(newx + templatew, newy + templateh);
-						//Point bl(newx + templatew,newy);
-						//Point tr(newx, newy + templateh);
-						rectangle(copy, tl, br, green);
-
-						imshow("Template", copy);
-						show = false;
-						waitKey();
-					} */
 					freeHoGFeaturesOnScale(feat);
 					//freeVectorizedFeatureArray(vec_featArray);
 				}
 				catch (int n) {
-					/*              +++DEBUG+++
-					if (n == TEMPLATEFAILUREHEIGHT)
-
-						cout << "HEIGHTERROR" << endl;
-					if (n == TEMPLATEFAILUREWIDTH)
-						cout << "WIDTHERROR" << endl;*/
+					
 					continue;
 				}
 			}
 		}
-		//downsample
-
-		//imshow("Test", img);
-		//waitKey();
+	
 
 		//Using GausPyramid for every Octave
 		if (++gausStage < LAMDA) {
@@ -622,6 +595,7 @@ std::vector<std::vector<float>> slideOverImage(Mat img, string svm_model_path, b
 }
 
 void freeHog(vector<int> dims, double *** feature_Array) {
+
 	for (int i = 0; i < dims[0]; i++) {
 		for (int j = 0; j < dims[1]; j++) {
 			free(feature_Array[i][j]);
@@ -632,15 +606,17 @@ void freeHog(vector<int> dims, double *** feature_Array) {
 }
 
 void freeHoGFeaturesOnScale(double*** feat) {
+
 	int featH = TEMPLATEHEIGHT / CELLSIZE;
 	int featW = TEMPLATEWIDTH / CELLSIZE;
 	for (int i = 0; i < featH; i++) {
-		delete[] feat[i];
+		delete feat[i];
 	}
 	delete[] feat;
 }
 
 void freeVectorizedFeatureArray(double ** v_feat) {
+
 	int x_cells = (TEMPLATEWIDTH / CELLSIZE);
 	int y_cells = (TEMPLATEHEIGHT / CELLSIZE);
 	int num_dims = 32;
