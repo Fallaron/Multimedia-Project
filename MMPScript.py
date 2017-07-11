@@ -44,22 +44,24 @@ def main():
             false_pos = float(line)
         if c == 4:
             num_gBoxes = float(line)
+        if c == 5:
+            numWindows = float(line)
 
-            falseRate = (false_pos / num_gBoxes)*100
+            falseRate = (false_pos / numWindows)
             missedRate = (1. - (truth / num_gBoxes))*100
 
             arrayx.append(falseRate)
             arrayy.append(missedRate)
             arrayz.append(treshold)
 
-        c = (c + 1) % 5
+        c = (c + 1) % 6
     print array0y
     print array1y
     print array0x
     print array1x
     fig, ax = plt.subplots();
     plt.ylabel('missed detection rate')
-    plt.xlabel('false positive rate')
+    plt.xlabel('FPPW')
     ax.plot(array0x, array0y, '-bo', label='SVM x.0')
 
     for X,Y,Z in zip(array0x,array0y,array0z):
@@ -73,6 +75,8 @@ def main():
         ax.annotate('{}'.format(Z), xy=(X,Y), xytext=(-5, -25), ha='left',
                 textcoords='offset points')
     plt.legend(loc='upper right')
+    vals = ax.get_yticks()
+    ax.set_yticklabels(['{:3.1f}%'.format(x) for x in vals])
     plt.show()
 
 

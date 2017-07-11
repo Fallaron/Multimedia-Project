@@ -398,8 +398,10 @@ std::vector<std::vector<float>> detection_Evaluation(string dataSet_path, std::v
 
 	for (int i = 0; i < SVM_Models.size(); i++) { // compute for different SVM models
 		//variate the threshold
+		cout << "Now Evaluation: " << SVM_Models[i] << endl;
 		DISVALUETRESHOLD = -0.5;
 		for (int t = 0; t < num_thresholds; t++) {	
+			cout << "Current Treshold: " << DISVALUETRESHOLD << "  num: " << t + 1 << "/" << num_thresholds << endl;
 			vector<float> temp;
 			int  c = 0, count = 0, false_pos = 0;
 			// run through the data Set
@@ -435,7 +437,7 @@ void detection_Evaluation_Graphical(string dataSet_path, std::vector<string> SVM
 	ofstream det;
 	det.open("detections.txt");
 	for (auto &Val : DET) {
-		det << Val[0] << "\n" << Val[1] << "\n" << Val[2] << "\n" << Val[3] << "\n" << Val[4] << endl;
+		det << Val[0] << "\n" << Val[1] << "\n" << Val[2] << "\n" << Val[3] << "\n" << Val[4] << "\n" << Val[5] << endl;
 	}
 	det.close();
 
@@ -535,8 +537,6 @@ std::vector<std::vector<float>> slideOverImage(Mat img, string svm_model_path, b
 		//cout << dims[0] << ":" << dims[1] << ":" << dims[2] << endl;
 
 		for (int y = CELLSIZE; y < imgheight - TEMPLATEHEIGHT; y += CELLSIZE) {
-
-			printf("thread num %d\n", omp_get_thread_num());
 			for (int x = CELLSIZE; x < imgwidth - TEMPLATEWIDTH; x += CELLSIZE) {
 				//x,y for HOGfeature in Template
 				try {
