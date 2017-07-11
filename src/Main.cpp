@@ -51,6 +51,7 @@ vector<double**> vFalsePositives;
 
 //initial = 0, see retrain method
 double DISVALUETRESHOLD = -1.2;
+int windowCount;
 
 int main() {
 
@@ -403,6 +404,7 @@ std::vector<std::vector<float>> detection_Evaluation(string dataSet_path, std::v
 			int  c = 0, count = 0, false_pos = 0;
 			// run through the data Set
 			int k = 0;
+			windowCount = 0;
 			for (auto img : images) {
 				
 				std::vector<std::vector<float>> final_Box;
@@ -418,6 +420,7 @@ std::vector<std::vector<float>> detection_Evaluation(string dataSet_path, std::v
 			temp.push_back(count);
 			temp.push_back(false_pos);
 			temp.push_back(num_gboxes);
+			temp.push_back(windowCount);
 			detections.push_back(temp);
 			temp.clear();
 			//adjust threshold
@@ -538,6 +541,7 @@ std::vector<std::vector<float>> slideOverImage(Mat img, string svm_model_path, b
 				//x,y for HOGfeature in Template
 				try {
 					double *** feat = getHOGFeatureArrayOnScaleAt(x, y, dims, featArray);
+					windowCount++;
 
 					// Predict if pedestrian stands in at this position and scale
 					double ** vec_featArray = vectorize_32_HoG_feature(feat, CELLSIZE, TEMPLATEWIDTH, TEMPLATEHEIGHT, vec_feat_dims);
