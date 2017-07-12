@@ -413,6 +413,8 @@ std::vector<std::vector<float>> detection_Evaluation(string dataSet_path, std::v
 				std::vector<int> res = detection_true_count(final_Box, bBoxes[c++], betterDetection);
 				count += res[0];
 				false_pos += res[1];
+				if (k == 5)
+					break;
 			}
 			temp.push_back(float(i));
 			temp.push_back(float(DISVALUETRESHOLD));
