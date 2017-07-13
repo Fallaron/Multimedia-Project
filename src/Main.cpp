@@ -107,7 +107,7 @@ int main() {
 			while (input.empty()) {
 				getline(cin, input);
 			}
-			svmModel = input; // "svm_2.0.xml";
+			svmModel = input;
 		}
 
 		if (train) {
@@ -166,8 +166,8 @@ int main() {
 				}
 				else {
 					try {
-						int i = stoi(input);
-						DISVALUETRESHOLD = i;
+						double d = stod(input);
+						DISVALUETRESHOLD = d;
 					}
 					catch (const invalid_argument e) {
 						continue;
@@ -226,10 +226,8 @@ int main() {
 			// retrain
 			while (!satisfied) {
 				cout << "Retraining... " << endl;
-				retrainModel(params, NEGFILE, svmModel+".1.xml", neg_datasetFeatArray, neg_feat_dims, pos_datasetFeatArray, pos_feat_dims);
+				retrainModel(params, NEGFILE, svmModel, neg_datasetFeatArray, neg_feat_dims, pos_datasetFeatArray, pos_feat_dims);
 				cout << "Retraning done!" << endl;
-				// test
-				//useTestImages(POSTESTFILE, svmModel); 
 				string input = "";
 				getline(cin, input);
 				cout << "Test your svm... are you satisfied? (y/n)";
@@ -294,6 +292,7 @@ void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg
 	cout << "Setting: desiredTrueNegCout:" << desiredTureNegCount << ", upper bound:" << upper_bound << ", lower bound:" << lower_bound << endl;
 
 	bool treshold_found = false;
+	cout << SVMPath << " (path)" << endl;
 	
 	while (!treshold_found && DISVALUETRESHOLD <= 0) {
 		locations.open(path);
@@ -304,7 +303,8 @@ void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg
 		cout << "Running neg_train with threshold " << DISVALUETRESHOLD << endl;
 		while (getline(locations, file)) {
 			Mat img = imread(file);
-			slideOverImage(img, SVMPath, true);
+			cout << SVMPath + ".0.xml" << " (path with xml)" << endl;
+			slideOverImage(img, SVMPath + ".0.xml", true);
 		}		
 		locations.close();
 		cout << "Got " << vFalsePositives.size() << " true_negs with treshold " << DISVALUETRESHOLD << ", select other threshold or press enter" << endl;
@@ -348,14 +348,13 @@ void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg
 		templFeat = vFalsePositives[f];
 		for (int n = 0; n < 32; n++) {
 			true_neg_feat[f][n] = templFeat[0][n];
-			cout << "templfeat: f:" << f << ", n:" << n << ", val:" << templFeat[0][n];
 		}
 		//TODO: Free double**
 		//freeVectorizedFeatureArray(templFeat);
 	}
 	//TODO: Free vector<double**>
 	cout << "Gathered Hard Negatives!" << endl;
-	train_classifier(pos_feat_array, neg_feat_array, pos_dims, neg_dims, SVMPath+"-retrained", params, true_neg_feat, true_neg_dims);
+	train_classifier(pos_feat_array, neg_feat_array, pos_dims, neg_dims, SVMPath+".1.xml", params, true_neg_feat, true_neg_dims);
 	cout << "Finished retraining" << endl;
 }
 
@@ -416,6 +415,8 @@ std::vector<std::vector<float>> detection_Evaluation(string dataSet_path, std::v
 				std::vector<int> res = detection_true_count(final_Box, bBoxes[c++], betterDetection);
 				count += res[0];
 				false_pos += res[1];
+				if (k == 5)
+					break;
 			}
 			temp.push_back(float(i));
 			temp.push_back(float(DISVALUETRESHOLD));
