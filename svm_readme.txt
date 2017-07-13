@@ -16,3 +16,15 @@ SVM_6.1 TermCriteria(CV_TERMCRIT_ITER, 500000, 0.00001) Threshold -1.1 mit retra
 
 SVM_7.0 TermCriteria(CV_TERMCRIT_ITER, 500000, 0.00001) Threshold -1.0 ohne retraining
 SVM_7.1 TermCriteria(CV_TERMCRIT_ITER, 500000, 0.00001) Threshold -1.0 mit retraining (3300 true negatives)
+
+SVM_8.0 TermCriteria(CV_TERMCRIT_ITER, 500000, 0.00001) Threshold -1.0 ohne retraining
+SVM_8.1 TermCriteria(CV_TERMCRIT_ITER, 500000, 0.00001) Threshold -1.0 mit retraining (3100 true negatives)
+
+SVM_9.0 TermCriteria(CV_TERMCRIT_ITER, 500000, 0.00001) Threshold -1.0 ohne retraining
+SVM_9.1 TermCriteria(CV_TERMCRIT_ITER, 500000, 0.00001) Threshold -1.0 mit retraining (3800 true negatives)
+
+SVM_10.0 TermCriteria(CV_TERMCRIT_ITER, 500000, 0.00001) Threshold -1.2 ohne retraining
+SVM_10.1 TermCriteria(CV_TERMCRIT_ITER, 500000, 0.00001) Threshold -1.2 mit retraining (1900 true negatives)
+
+SVM_11.0 TermCriteria(CV_TERMCRIT_ITER, 500000, 0.00001) Threshold -1.2 ohne retraining
+SVM_11.1 TermCriteria(CV_TERMCRIT_ITER, 500000, 0.00001) Threshold -1.2 mit retraining (2300 true negatives)
