@@ -141,7 +141,7 @@ void non_Max_Suppression(std::vector<std::vector<float>>& final_BBox, std::vecto
 	//fixMaxSupressions(final_BBox);
 }
 
-void showMaximabBoxes(std::vector<std::vector<float>>& final_BBox, Mat img, std::vector<int> & bBoxesOrig) {
+void showMaximabBoxes(std::vector<std::vector<float>>& final_BBox, Mat img, std::vector<int> & bBoxesOrig, string windowName) {
 	
 	float overlap = 0;
 	if (img.empty())
@@ -186,7 +186,7 @@ void showMaximabBoxes(std::vector<std::vector<float>>& final_BBox, Mat img, std:
 	}
 
 
-	imshow("Maxima", img);
+	imshow(windowName, img);
 	waitKey();
 
 }

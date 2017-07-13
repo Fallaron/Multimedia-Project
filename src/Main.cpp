@@ -396,7 +396,7 @@ void useTestImages(String path, String SVMPath) {
 		std::vector<std::vector<float>> final_Box;
 		std::vector<std::vector<float>> dWinfeat = slideOverImage(img, SVMPath, false);
 		non_Max_Suppression(final_Box, dWinfeat, TEMPLATEWIDTH, TEMPLATEHEIGHT);
-		showMaximabBoxes(final_Box, img, bBoxes[c++]);		
+		showMaximabBoxes(final_Box, img, bBoxes[c++], SVMPath);		
 	}
 }
 
