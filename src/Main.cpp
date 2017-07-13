@@ -334,7 +334,7 @@ void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg
 	cout << "Selected threshold " << DISVALUETRESHOLD << " with " << vFalsePositives.size() << " true_negs" << endl;
 
 	true_neg_dims.push_back(vFalsePositives.size());
-	true_neg_dims.push_back(32);
+	true_neg_dims.push_back(32*featH*featW);
 
 	double ** true_neg_feat = (double**)calloc(vFalsePositives.size(), sizeof(double*));
 
@@ -415,8 +415,6 @@ std::vector<std::vector<float>> detection_Evaluation(string dataSet_path, std::v
 				std::vector<int> res = detection_true_count(final_Box, bBoxes[c++], betterDetection);
 				count += res[0];
 				false_pos += res[1];
-				if (k == 5)
-					break;
 			}
 			temp.push_back(float(i));
 			temp.push_back(float(DISVALUETRESHOLD));
