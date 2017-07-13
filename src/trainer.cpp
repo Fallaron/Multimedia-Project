@@ -13,11 +13,14 @@ cv::Mat generate_SVM_trainSet(double **pos_featArray, double** neg_featArray, st
 	int trueNeg_features = 0;
 	if (!(true_neg_dims.empty()))
 		true_neg_count = true_neg_dims[0];
-	if(true_neg_count != 0)
+	cout << "(true neg count: " << true_neg_count <<")";
+	if (true_neg_count != 0)		
 		//TODO: needed?
 		trueNeg_features = true_neg_dims[1];
 	int img_total_count = pos_count + neg_count + true_neg_count;
 	int features = pos_dims[1];	
+
+	cout << "trueneg feat: " << trueNeg_features << ", posfeat:" << features << "negfeat:"<<neg_dims[1];
 	
 	cv::Mat trainDataSet = cv::Mat(img_total_count, features, CV_32FC1);
 	// label Dataset
@@ -29,24 +32,24 @@ cv::Mat generate_SVM_trainSet(double **pos_featArray, double** neg_featArray, st
 	while (img < img_total_count) {
 		if (true_neg < true_neg_count) {
 			responses.at<float>(img, 0) = -1;
-			for (int n = 0; n < trueNeg_features; n++) {
+			for (int n = 0; n < features; n++) {				
 				trainDataSet.at<float>(img, n) = trueNeg_featArray[true_neg][n];
 			}
 			true_neg++;			
 		}
-		else if (img < true_neg_count + neg_count) {
-			responses.at<float>(img, 0) = -1;
-			for (int n = 0; n < features; n++) {
-				trainDataSet.at<float>(img, n) = neg_featArray[neg][n];
-			}
-			neg++;
-		}
-		else {
+		else if (img < true_neg_count + pos_count) {
 			responses.at<float>(img, 0) = 1;
 			for (int n = 0; n < features; n++) {
 				trainDataSet.at<float>(img, n) = pos_featArray[pos][n];
 			}
 			pos++;
+		}
+		else {
+			responses.at<float>(img, 0) = -1;
+			for (int n = 0; n < features; n++) {
+				trainDataSet.at<float>(img, n) = neg_featArray[neg][n];
+			}
+			neg++;
 		}
 		img++;
 	}
@@ -54,7 +57,7 @@ cv::Mat generate_SVM_trainSet(double **pos_featArray, double** neg_featArray, st
 }
 
 std::string train_classifier(double **pos_featArray, double** neg_featArray, std::vector<int> pos_dims, std::vector<int>neg_dims, std::string SVMModel_Name, CvSVMParams params, double ** true_neg_feat_array, vector<int> true_neg_dims) {
-
+	cout << "training svm " << SVMModel_Name << "...";
 	Mat responses;
 	Mat data = generate_SVM_trainSet(pos_featArray, neg_featArray, pos_dims, neg_dims, responses, true_neg_feat_array, true_neg_dims);
 	cv::Mat img_sample(1, data.cols, CV_32FC1);
@@ -66,13 +69,17 @@ std::string train_classifier(double **pos_featArray, double** neg_featArray, std
 
 	// pick one image at a time from Mat Data and train the SVM with it and move on to the next till all are done
 	bool model;
-	model = SVM.train_auto(data, responses, varidx, sample, params);
-	//model = SVM.train(data, responses, varidx, sample, params);
+	//model = SVM.train_auto(data, responses, varidx, sample, params);
+	model = SVM.train(data, responses, varidx, sample, params);
 
 	if (model) {
 		SVM.save(SVMModel_Name.c_str());
+		cout << " done!" << endl;
 	}
-	cout << "SVM "<< SVMModel_Name << " successfully trained." << endl;
+	else {
+		cout << "failed! (model was false)" << endl;
+	}
+	
 	return SVMModel_Name;
 }
 

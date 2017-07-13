@@ -1,6 +1,6 @@
 #include <iostream>
 #include <fstream>
-#include <omp.h>
+//#include <omp.h>
 #include <opencv2\core.hpp>
 #include <opencv2\imgproc.hpp>
 #include <opencv2\highgui.hpp>
@@ -146,8 +146,8 @@ int main() {
 				}
 				else {
 					try {
-						int i = stoi(input);
-						epsilon = i;
+						double d = stod(input);
+						epsilon = d;
 					}
 					catch (const invalid_argument e) {
 						continue;
@@ -197,6 +197,8 @@ int main() {
 				}
 				set = true;
 			}
+
+			cout << "running with " << iterations << " iterations and " << epsilon << " epsilon" << endl;
 			
 			vector<std::vector<int>> boundingBoxes;
 			getBoundingBox(ANNOTATIONTESTFILE, boundingBoxes);
@@ -262,6 +264,10 @@ int main() {
 			return 0;
 		}
 
+		train = false;
+		test = false;
+		eval = false;
+
 		//again and again
 		continue;
 	}
@@ -292,7 +298,6 @@ void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg
 	cout << "Setting: desiredTrueNegCout:" << desiredTureNegCount << ", upper bound:" << upper_bound << ", lower bound:" << lower_bound << endl;
 
 	bool treshold_found = false;
-	cout << SVMPath << " (path)" << endl;
 	
 	while (!treshold_found && DISVALUETRESHOLD <= 0) {
 		locations.open(path);
@@ -303,7 +308,6 @@ void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg
 		cout << "Running neg_train with threshold " << DISVALUETRESHOLD << endl;
 		while (getline(locations, file)) {
 			Mat img = imread(file);
-			cout << SVMPath + ".0.xml" << " (path with xml)" << endl;
 			slideOverImage(img, SVMPath + ".0.xml", true);
 		}		
 		locations.close();
@@ -334,19 +338,19 @@ void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg
 	cout << "Selected threshold " << DISVALUETRESHOLD << " with " << vFalsePositives.size() << " true_negs" << endl;
 
 	true_neg_dims.push_back(vFalsePositives.size());
-	true_neg_dims.push_back(32);
+	true_neg_dims.push_back(4096);
 
 	double ** true_neg_feat = (double**)calloc(vFalsePositives.size(), sizeof(double*));
 
 
 	for (int i = 0; i < vFalsePositives.size(); i++) {
-		true_neg_feat[i] = (double *)calloc(32, sizeof(double));
+		true_neg_feat[i] = (double *)calloc(4096, sizeof(double));
 	}
 
 	double** templFeat;
 	for (int f = 0; f < vFalsePositives.size(); f++) {
 		templFeat = vFalsePositives[f];
-		for (int n = 0; n < 32; n++) {
+		for (int n = 0; n < 4096; n++) {
 			true_neg_feat[f][n] = templFeat[0][n];
 		}
 		//TODO: Free double**
@@ -432,18 +436,18 @@ std::vector<std::vector<float>> detection_Evaluation(string dataSet_path, std::v
 void detection_Evaluation_Graphical(string dataSet_path, std::vector<string> SVM_Models, bool betterDetection) {
 	std::vector<std::vector<float>> DET = detection_Evaluation(dataSet_path, SVM_Models, betterDetection);
 	ofstream det;
-	det.open("detections.txt");
+	string detectionFileName = "detections-" + SVM_Models[0] + "-" + (betterDetection ? "true" : "false") + ".txt";
+	det.open(detectionFileName);
 	for (auto &Val : DET) {
 		det << Val[0] << "\n" << Val[1] << "\n" << Val[2] << "\n" << Val[3] << "\n" << Val[4] << endl;
 	}
 	det.close();
 
-	string filename = "detections.txt ";
+	string filename = detectionFileName+ " ";
 	string commando = "python ";
 	string scriptname = "MMPScript.py ";
 	commando += scriptname + filename;
 	system(commando.c_str());
-
 }
 
 vector<Mat> getImageVector(string dataSet_path) {
@@ -523,19 +527,12 @@ std::vector<std::vector<float>> slideOverImage(Mat img, string svm_model_path, b
 
 	while (img.cols > TEMPLATEWIDTH && img.rows > TEMPLATEHEIGHT) {
 		vector<int> dims;
-
-		//********* added **********
 		vector<int> vec_feat_dims;
 		double scale = pow(scalingfactor, stage);
-		bool person = false;
-		// **************************************
-
 		double *** featArray = computeHoG(img, CELLSIZE, dims);
-		//cout << dims[0] << ":" << dims[1] << ":" << dims[2] << endl;
+		bool person = false;
 
 		for (int y = CELLSIZE; y < imgheight - TEMPLATEHEIGHT; y += CELLSIZE) {
-
-			printf("thread num %d\n", omp_get_thread_num());
 			for (int x = CELLSIZE; x < imgwidth - TEMPLATEWIDTH; x += CELLSIZE) {
 				//x,y for HOGfeature in Template
 				try {
@@ -551,8 +548,7 @@ std::vector<std::vector<float>> slideOverImage(Mat img, string svm_model_path, b
 						/*if (!negTrain)
 							cout << "Found Pedestrain, distance: " << disVal <<endl;*/
 						person = false;
-						show = true;
-						/************added**********/
+						show = true;						
 						detectionWindow_features(detectionWinFeat, x, y, scale, disVal);
 					}
 					//size of Template in Original Window, may be needed in Future.
@@ -569,8 +565,7 @@ std::vector<std::vector<float>> slideOverImage(Mat img, string svm_model_path, b
 					freeHoGFeaturesOnScale(feat);
 					//freeVectorizedFeatureArray(vec_featArray);
 				}
-				catch (int n) {
-					
+				catch (int n) {					
 					continue;
 				}
 			}
