@@ -231,12 +231,11 @@ int main() {
 				retrainModel(params, NEGFILE, svmModel, neg_datasetFeatArray, neg_feat_dims, pos_datasetFeatArray, pos_feat_dims);
 				cout << "Retraning done!" << endl;
 				string input = "";
-				getline(cin, input);
-				cout << "Test your svm... are you satisfied? (y/n)";
+				cout << "Do you want to run again with a diffrent threshold? (y/n)";
 				while (input.empty()) {
 					getline(cin, input);
 				}
-				if (input == "y") {
+				if (input == "n") {
 					satisfied = true;
 				}
 			}
