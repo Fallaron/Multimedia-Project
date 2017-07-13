@@ -49,8 +49,7 @@ vector<Mat> getImageVector(string dataSet_path);
 
 vector<double**> vFalsePositives;
 
-//initial = 0, see retrain method
-double DISVALUETRESHOLD = -1.2;
+double DISVALUETRESHOLD = -1.0;
 int windowCount;
 
 int main() {
@@ -112,7 +111,7 @@ int main() {
 
 		if (train) {
 			int iterations;
-			double epsilon;
+			float epsilon;
 
 			cout << "training ..." << endl;
 
@@ -146,8 +145,8 @@ int main() {
 				}
 				else {
 					try {
-						double d = stod(input);
-						epsilon = d;
+						float f = stof(input);
+						epsilon = f;
 					}
 					catch (const invalid_argument e) {
 						continue;
@@ -176,13 +175,14 @@ int main() {
 				set = true;
 			}
 
-			cout << "should disvaluethreshold be adjusted dynamically? (y/n): ";
+			cout << "should disvaluethreshold be adjusted dynamically? (y/n default: n): ";
 			set = false;
 			input = "";
 			while (!set) {
 				getline(cin, input);
 				if (input.empty()) {
-					continue;
+					dynamic_threshold = false;
+					set = true;
 				}
 				else {
 					if (input == "y") {
@@ -243,26 +243,51 @@ int main() {
 		}
 
 		if (test) {
+			//use svm on test images
 			useTestImages(POSTESTFILE, svmModel);
 		}
 
 		if (eval) {
 			//TEST DETECTION EVALUATION
+			bool betterDetection = true;
+			cout << "do you want to use better detection mode? (y/n, default: y): ";
+			set = false;
+			input = "";
+			while (!set) {
+				getline(cin, input);
+				if (input.empty()) {
+					betterDetection = true;
+					set = true;
+				}
+				else {
+					if (input == "y") {
+						betterDetection = true;
+					}
+					else if (input == "n") {
+						betterDetection = false;
+					}
+					else {
+						continue;
+					}
+				}
+				set = true;
+			}
+			
 			std::vector<string> SVM_Models;
 			SVM_Models.push_back(svmModel+".0.xml");
 			SVM_Models.push_back(svmModel+".1.xml");
 			
-				detection_Evaluation_Graphical(POSTESTFILE, SVM_Models, true );
-			
-
+			detection_Evaluation_Graphical(POSTESTFILE, SVM_Models, betterDetection);
 		}
 
-		cout << "finished" << endl;
-		getchar();
+		
 
 		if (exit) {
 			return 0;
 		}
+
+		cout << "finished, enter to continue...";
+		getchar();
 
 		train = false;
 		test = false;
