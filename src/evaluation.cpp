@@ -5,6 +5,7 @@ using namespace cv;
 using namespace std;
 #define OVERLAP_THRES 0.2
 #define CONTAINED_THRES 0.5
+#define MAXBOX_COUNT 5
 
 void non_Max_Suppression(std::vector<std::vector<float>>& final_BBox, std::vector<std::vector<float>> detWinFeat, int temp_Width, int temp_Height) {
 	final_BBox = std::vector<std::vector<float>>(0);
@@ -13,7 +14,7 @@ void non_Max_Suppression(std::vector<std::vector<float>>& final_BBox, std::vecto
 	bool addNewBox = true, del = false, jumpBack = false;
 	if (!detWinFeat.empty()) {
 		//************* initial bBox values ********
-		int sel = 1;
+		int count = 1;
 		double scale = detWinFeat[0][3];
 		float x1 = detWinFeat[0][1] * scale;
 		float y1 = detWinFeat[0][2] * scale;
@@ -43,7 +44,7 @@ void non_Max_Suppression(std::vector<std::vector<float>>& final_BBox, std::vecto
 			float current_score = detWinFeat[i][0];
 
 			// if current box has to replace more than one boxes delete 2nd, 3rd etc reducing the final_box vector size and avoiding duplicates	
-			for (int n = 0; n < sel; n++) {
+			for (int n = 0; n < count; n++) {
 				if (jumpBack) {
 					del = false;
 					jumpBack = false;
@@ -68,7 +69,7 @@ void non_Max_Suppression(std::vector<std::vector<float>>& final_BBox, std::vecto
 					addNewBox = false;
 					if (del && final_BBox.size() != 0) {
 						final_BBox.erase(final_BBox.begin() + n);
-						sel--;
+						count--;
 						jumpBack = true;
 						n = 0; //reset loop, box positions have changed in the final vector
 					}
@@ -89,7 +90,7 @@ void non_Max_Suppression(std::vector<std::vector<float>>& final_BBox, std::vecto
 						addNewBox = false;
 						if (del && final_BBox.size() != 0) {
 							final_BBox.erase(final_BBox.begin() + n);
-							sel--;
+							count--;
 							jumpBack = true;
 							n = 0;
 						}
@@ -107,7 +108,7 @@ void non_Max_Suppression(std::vector<std::vector<float>>& final_BBox, std::vecto
 						addNewBox = false;
 						if (del && final_BBox.size() != 0) {
 							final_BBox.erase(final_BBox.begin() + n);
-							sel--;
+							count--;
 							jumpBack = true;
 							n = 0; // reset loop, box positions have changed in the final vector
 						}
@@ -123,9 +124,9 @@ void non_Max_Suppression(std::vector<std::vector<float>>& final_BBox, std::vecto
 					}
 				}
 			}
-			// add new bBox.. cud be new pedstrian thus increase the size of final bBoxes
-			if (addNewBox) {
-				sel++;
+			// add new bBox.. cud be new pedstrian thus increase the size of final bBoxes if count less than max box count
+			if (count <= MAXBOX_COUNT && addNewBox) {
+				count++;
 				vector<float> temp;
 				temp.push_back(pos_x);
 				temp.push_back(pos_y);
