@@ -1,6 +1,5 @@
 #include <iostream>
 #include <fstream>
-//#include <omp.h>
 #include <opencv2\core.hpp>
 #include <opencv2\imgproc.hpp>
 #include <opencv2\highgui.hpp>
@@ -9,6 +8,7 @@
 #include "features.h"
 #include "trainer.h"
 #include "evaluation.h"
+//#include <omp.h>
 
 #define ALLOCATIONFAULT -666
 #define TEMPLATEFAILUREWIDTH -20
@@ -48,9 +48,9 @@ void detection_Evaluation_Graphical(string dataSet_path, std::vector<string> SVM
 vector<Mat> getImageVector(string dataSet_path);
 
 vector<double**> vFalsePositives;
+int windowCount;
 
 double DISVALUETRESHOLD = -1.0;
-int windowCount;
 
 int main() {
 
@@ -64,7 +64,7 @@ int main() {
 
 	while (true) {
 		cout << "choose what you want to do:" << endl;
-		cout << "do you want to train an svm (1), test an svm (2), draw a graphical eval (3) or exit (4)? ";
+		cout << "train svm (1), test svm (2), draw graphical eval (3) or exit (4)? ";
 		bool set = false;
 		string input = "";
 		while (!set) {
@@ -161,7 +161,7 @@ int main() {
 			while (!set) {
 				getline(cin, input);
 				if (input.empty()) {
-					// do nothing
+					set = true;
 				}
 				else {
 					try {
@@ -279,9 +279,7 @@ int main() {
 			
 			detection_Evaluation_Graphical(POSTESTFILE, SVM_Models, betterDetection);
 		}
-
 		
-
 		if (exit) {
 			return 0;
 		}
@@ -301,9 +299,8 @@ int main() {
 void addtoFalsePositives(double** T) {
 	vFalsePositives.push_back(T);
 	if (vFalsePositives.size() % 100 == 0) {
-		cout << "now:" << vFalsePositives.size() << endl;
+		cout << "now:" << vFalsePositives.size() << " false positives" << endl;
 	}
-	//cout << "added, now:" << vFalsePositives.size() << endl;
 }
 
 void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg_feat_array, vector<int> neg_dims, double ** pos_feat_array, vector<int> pos_dims) {
@@ -388,7 +385,7 @@ void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg
 }
 
 void useTestImages(String path, String SVMPath) {
-	cout << "use test images" << endl;
+	cout << "Testing " << SVMPath << " with test images" << endl;
 	ifstream locations;
 	locations.open(path);
 	String file;
@@ -409,34 +406,30 @@ std::vector<std::vector<float>> detection_Evaluation(string dataSet_path, std::v
 	
 	int num_gboxes = 0;
 	std::vector<std::vector<float>> detections;
-
-
+	
 	vector<vector<int>> bBoxes;
 	getBoundingBox(ANNOTATIONTESTFILE, bBoxes); 
 	//total number of ground truth bounding boxes
 	for (auto &box : bBoxes) {
 		num_gboxes += box.size() / 4;
 	}
-	// sample vector of DISVALUETRESHOLD...it cud be differently implemented
-	//std::vector<double> thresHolds = {-1.1,-1.2};
+	
 	int num_thresholds = 20;
 	double threshold_Step = -0.1;
-
 	vector<Mat> images = getImageVector(dataSet_path);
 
 	for (int i = 0; i < SVM_Models.size(); i++) { // compute for different SVM models
 		//variate the threshold
-		cout << "Now Evaluation: " << SVM_Models[i] << endl;
+		cout << "Now Evaluating: " << SVM_Models[i] << endl;
 		DISVALUETRESHOLD = -0.5;
 		for (int t = 0; t < num_thresholds; t++) {	
-			cout << "Current Treshold: " << DISVALUETRESHOLD << "  num: " << t + 1 << "/" << num_thresholds << endl;
+			cout << "Current threshold: " << DISVALUETRESHOLD << "  (" << t + 1 << "/" << num_thresholds << ")" << endl;
 			vector<float> temp;
 			int  c = 0, count = 0, false_pos = 0;
 			// run through the data Set
 			int k = 0;
 			windowCount = 0;
-			for (auto img : images) {
-				
+			for (auto img : images) {				
 				std::vector<std::vector<float>> final_Box;
 				// variating the threshold inside slideOverImage affects the final_bBox which in turn affects overlap values, affecting the miss rate
 				std::vector<std::vector<float>> dWinfeat = slideOverImage(img, SVM_Models[i],false); 
@@ -612,8 +605,6 @@ std::vector<std::vector<float>> slideOverImage(Mat img, string svm_model_path, b
 		imgheight = img.size().height;
 		imgwidth = img.size().width;
 		stage++;
-		// +++ DEBUG +++
-		//cout << "Width: " << img.size().width << " -- Height: " << img.size().height << endl;
 		freeHog(dims, featArray);
 	}
 	return detectionWinFeat;
