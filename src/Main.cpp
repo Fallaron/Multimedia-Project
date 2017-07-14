@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <time.h>
 #include <opencv2\core.hpp>
 #include <opencv2\imgproc.hpp>
 #include <opencv2\highgui.hpp>
@@ -42,6 +43,7 @@ void freeVectorizedFeatureArray(double ** v_feat);
 void freeHog(vector<int> dims, double *** feature_Array);
 void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg_feat_array, vector<int> neg_dims, double ** pos_feat_array, vector<int> pos_dims);
 void useTestImages(String path, String SVMPath);
+void useTestImagesRandom(String path, String SVMPath);
 void addtoFalsePositives(double** T);
 std::vector<std::vector<float>> detection_Evaluation(string dataSet_path, std::vector<string> SVM_Models, bool betterDetect);
 void detection_Evaluation_Graphical(string dataSet_path, std::vector<string> SVM_Models, bool betterDetection);
@@ -61,7 +63,7 @@ int main() {
 	bool dynamic_threshold = false;
 
 	bool exit = false;
-
+	srand(time(NULL));
 	while (true) {
 		cout << "choose what you want to do:" << endl;
 		cout << "train svm (1), test svm (2), draw graphical eval (3) or exit (4)? ";
@@ -381,6 +383,24 @@ void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg
 	cout << "Gathered Hard Negatives!" << endl;
 	train_classifier(pos_feat_array, neg_feat_array, pos_dims, neg_dims, SVMPath+".1.xml", params, true_neg_feat, true_neg_dims);
 	cout << "Finished retraining" << endl;
+}
+
+
+void useTestImagesRandom(String path, String SVMPath) {
+	cout << "Testing " << SVMPath << " with test images" << endl;
+	ifstream locations;
+	locations.open(path);
+	String file;
+	int c = 0;
+	vector<vector<int>> bBoxes;
+	vector<Mat> images = getImageVector(path);
+	getBoundingBox(ANNOTATIONTESTFILE, bBoxes);
+	for (auto img : images) {
+		std::vector<std::vector<float>> final_Box;
+		std::vector<std::vector<float>> dWinfeat = slideOverImage(img, SVMPath, false);
+		non_Max_Suppression(final_Box, dWinfeat, TEMPLATEWIDTH, TEMPLATEHEIGHT);
+		showMaximabBoxes(final_Box, img, bBoxes[c++], SVMPath);
+	}
 }
 
 void useTestImages(String path, String SVMPath) {
