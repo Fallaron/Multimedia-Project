@@ -57,6 +57,7 @@ int main() {
 	bool train = false;
 	bool test = false;
 	bool eval = false;
+	bool presentation = false;
 	//not used yet
 	bool dynamic_threshold = false;
 
@@ -64,7 +65,7 @@ int main() {
 
 	while (true) {
 		cout << "choose what you want to do:" << endl;
-		cout << "train svm (1), test svm (2), draw graphical eval (3) or exit (4)? ";
+		cout << "train (1), test (2), eval (3), presentation (4) or exit (5)? ";
 		bool set = false;
 		string input = "";
 		while (!set) {
@@ -85,6 +86,9 @@ int main() {
 					eval = true;
 					break;
 				case 4:
+					presentation = true;
+					break;
+				case 5:
 					exit = true;
 					break;
 				default:
@@ -239,6 +243,10 @@ int main() {
 					satisfied = true;
 				}
 			}
+		}
+
+		if (presentation) {
+			//hier bitte
 		}
 
 		if (test) {
