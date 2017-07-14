@@ -249,6 +249,7 @@ int main() {
 
 		if (presentation) {
 			//hier bitte
+			useTestImagesRandom(POSTESTFILE, svmModel);
 		}
 
 		if (test) {
@@ -299,7 +300,7 @@ int main() {
 		train = false;
 		test = false;
 		eval = false;
-
+		presentation = false;
 		//again and again
 		continue;
 	}
@@ -403,12 +404,14 @@ void useTestImagesRandom(String path, String SVMPath) {
 	vector<vector<int>> bBoxes;
 	vector<Mat> images = getImageVector(path);
 	getBoundingBox(ANNOTATIONTESTFILE, bBoxes);
-	for (auto img : images) {
+	for (int i = 0; i < 10; i++) {
+		int pos = rand() % images.size();
 		std::vector<std::vector<float>> final_Box;
-		std::vector<std::vector<float>> dWinfeat = slideOverImage(img, SVMPath, false);
+		std::vector<std::vector<float>> dWinfeat = slideOverImage(images[pos], SVMPath, false);
 		non_Max_Suppression(final_Box, dWinfeat, TEMPLATEWIDTH, TEMPLATEHEIGHT);
-		showMaximabBoxes(final_Box, img, bBoxes[c++], SVMPath);
+		showMaximabBoxes(final_Box, images[pos], bBoxes[pos], SVMPath);
 	}
+	
 }
 
 void useTestImages(String path, String SVMPath) {
@@ -501,10 +504,12 @@ vector<Mat> getImageVector(string dataSet_path) {
 	std::vector<std::string> dataSet_img_paths;
 	get_dataSet(dataSet_path, dataSet_img_paths);
 	vector<Mat> images;
+	cout << "Reading Images from Disk" << endl;
 	for (auto path : dataSet_img_paths) {
 		Mat img = imread(path);
 		images.push_back(img);
 	}
+	cout << "Reading Finished" << endl;
 	return images;
 }
 
