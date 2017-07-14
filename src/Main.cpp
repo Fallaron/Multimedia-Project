@@ -237,6 +237,9 @@ int main() {
 				retrainModel(params, NEGFILE, svmModel, neg_datasetFeatArray, neg_feat_dims, pos_datasetFeatArray, pos_feat_dims, dynamic_threshold);
 				cout << "Retraning done!" << endl;
 				string input = "";
+				if (dynamic_threshold) {
+					break;
+				}
 				cout << "Do you want to run again with a diffrent threshold? (y/n)";
 				while (input.empty()) {
 					getline(cin, input);
@@ -320,14 +323,14 @@ void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg
 	int featH = TEMPLATEHEIGHT / CELLSIZE;
 	int featW = TEMPLATEWIDTH / CELLSIZE;
 
-	int desiredTureNegCount = neg_dims[0] / 10;
+	int desiredTrueNegCount = neg_dims[0] / 10;
 	int offset = 100;
-	int lower_bound = desiredTureNegCount - offset;
-	int upper_bound = desiredTureNegCount + offset;
+	int lower_bound = desiredTrueNegCount - offset;
+	int upper_bound = desiredTrueNegCount + offset;
 	if (lower_bound < 0) {
 		lower_bound = 0;
 	}
-	cout << "Setting: desiredTrueNegCout:" << desiredTureNegCount << ", upper bound:" << upper_bound << ", lower bound:" << lower_bound << endl;
+	cout << "Setting: desiredTrueNegCout:" << desiredTrueNegCount << ", upper bound:" << upper_bound << ", lower bound:" << lower_bound << endl;
 
 	bool treshold_found = false;
 	
