@@ -77,6 +77,8 @@ def main():
     plt.legend(loc='upper right')
     vals = ax.get_yticks()
     ax.set_yticklabels(['{:3.1f}%'.format(x) for x in vals])
+    fig.canvas.set_window_title(sys.argv[1])
+    #ax.set_title(sys.argv[1])
     plt.show()
 
 
