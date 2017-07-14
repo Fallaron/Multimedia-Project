@@ -41,7 +41,7 @@ double*** getHOGFeatureArrayOnScaleAt(int x, int y, vector<int> &dims, double **
 void freeHoGFeaturesOnScale(double*** feat);
 void freeVectorizedFeatureArray(double ** v_feat);
 void freeHog(vector<int> dims, double *** feature_Array);
-void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg_feat_array, vector<int> neg_dims, double ** pos_feat_array, vector<int> pos_dims);
+void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg_feat_array, vector<int> neg_dims, double ** pos_feat_array, vector<int> pos_dims, bool dynamic_threshold);
 void useTestImages(String path, String SVMPath);
 void useTestImagesRandom(String path, String SVMPath);
 void addtoFalsePositives(double** T);
@@ -60,11 +60,11 @@ int main() {
 	bool test = false;
 	bool eval = false;
 	bool presentation = false;
-	//not used yet
 	bool dynamic_threshold = false;
-
 	bool exit = false;
+
 	srand(time(NULL));
+
 	while (true) {
 		cout << "choose what you want to do:" << endl;
 		cout << "train (1), test (2), eval (3), presentation (4) or exit (5)? ";
@@ -234,7 +234,7 @@ int main() {
 			// retrain
 			while (!satisfied) {
 				cout << "Retraining... " << endl;
-				retrainModel(params, NEGFILE, svmModel, neg_datasetFeatArray, neg_feat_dims, pos_datasetFeatArray, pos_feat_dims);
+				retrainModel(params, NEGFILE, svmModel, neg_datasetFeatArray, neg_feat_dims, pos_datasetFeatArray, pos_feat_dims, dynamic_threshold);
 				cout << "Retraning done!" << endl;
 				string input = "";
 				cout << "Do you want to run again with a diffrent threshold? (y/n)";
@@ -313,7 +313,7 @@ void addtoFalsePositives(double** T) {
 	}
 }
 
-void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg_feat_array, vector<int> neg_dims, double ** pos_feat_array, vector<int> pos_dims) {
+void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg_feat_array, vector<int> neg_dims, double ** pos_feat_array, vector<int> pos_dims, bool dynamic_threshold) {
 	ifstream locations;
 	String file;
 	vector<int> true_neg_dims;
@@ -343,28 +343,30 @@ void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg
 			slideOverImage(img, SVMPath + ".0.xml", true);
 		}		
 		locations.close();
-		cout << "Got " << vFalsePositives.size() << " true_negs with treshold " << DISVALUETRESHOLD << ", select other threshold or press enter" << endl;
 
-		string input;
-		getline(cin, input);
-		if (input.empty()) {
-			treshold_found = true;
+		if (!dynamic_threshold) {
+			cout << "Got " << vFalsePositives.size() << " true_negs with treshold " << DISVALUETRESHOLD << ", select other threshold or press enter" << endl;
+
+			string input;
+			getline(cin, input);
+			if (input.empty()) {
+				treshold_found = true;
+			}
+			else {
+				DISVALUETRESHOLD = stod(input);
+			}
 		}
 		else {
-			DISVALUETRESHOLD = stod(input);
-		}
-		continue;
-
-		//not used!
-		if (vFalsePositives.size() > upper_bound) {
-			DISVALUETRESHOLD -= 0.1;
-		}
-		else if (vFalsePositives.size() < lower_bound && DISVALUETRESHOLD < -0.02) {
-			cout << vFalsePositives.size() << " < " << lower_bound << endl;
-			DISVALUETRESHOLD += 0.02;
-		}
-		else {
-			treshold_found = true;
+			cout << "Got " << vFalsePositives.size() << " true_negs with treshold " << DISVALUETRESHOLD << endl;
+			if (vFalsePositives.size() > upper_bound) {
+				DISVALUETRESHOLD -= 0.1;
+			}
+			else if (vFalsePositives.size() < lower_bound && DISVALUETRESHOLD < -0.02) {
+				DISVALUETRESHOLD += 0.02;
+			}
+			else {
+				treshold_found = true;
+			}
 		}
 	}
 	cout << "Selected threshold " << DISVALUETRESHOLD << " with " << vFalsePositives.size() << " true_negs" << endl;
