@@ -13,15 +13,12 @@ cv::Mat generate_SVM_trainSet(double **pos_featArray, double** neg_featArray, st
 	int trueNeg_features = 0;
 	if (!(true_neg_dims.empty()))
 		true_neg_count = true_neg_dims[0];
-	cout << "(true neg count: " << true_neg_count <<")";
 	if (true_neg_count != 0)		
 		//TODO: needed?
 		trueNeg_features = true_neg_dims[1];
 	int img_total_count = pos_count + neg_count + true_neg_count;
 	int features = pos_dims[1];	
 
-	cout << "trueneg feat: " << trueNeg_features << ", posfeat:" << features << "negfeat:"<<neg_dims[1];
-	
 	cv::Mat trainDataSet = cv::Mat(img_total_count, features, CV_32FC1);
 	// label Dataset
 	responses = cv::Mat(img_total_count, 1, CV_32FC1);
@@ -70,7 +67,7 @@ std::string train_classifier(double **pos_featArray, double** neg_featArray, std
 	// pick one image at a time from Mat Data and train the SVM with it and move on to the next till all are done
 	bool model;
 	//model = SVM.train_auto(data, responses, varidx, sample, params);
-	model = SVM.train(data, responses, varidx, sample, params);
+	model = SVM.train_auto(data, responses, varidx, sample, params);
 
 	if (model) {
 		SVM.save(SVMModel_Name.c_str());
