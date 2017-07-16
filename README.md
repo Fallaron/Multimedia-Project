@@ -5,9 +5,13 @@
 * Copy [OpenCV(2413) folder](https://www.kuenzler.io/share/opencv.zip) to project root. (same level as src folder)
 * Open Project with visual studio
 
-Project folder should look like this:
+Project folder structure should look like this:
 
-![project folder](https://www.kuenzler.io/share/mmp2.PNG "project folder")
+![project folder](https://www.kuenzler.io/share/mmp_3.PNG "project folder")
+
+The data list files need to be in the root project folder:
+
+![project folder](https://www.kuenzler.io/share/mmp_4.PNG "project folder")
 
 If you face problems, check your project settings:
 
