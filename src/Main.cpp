@@ -42,8 +42,8 @@ void freeHoGFeaturesOnScale(double*** feat);
 void freeVectorizedFeatureArray(double ** v_feat);
 void freeHog(vector<int> dims, double *** feature_Array);
 void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg_feat_array, vector<int> neg_dims, double ** pos_feat_array, vector<int> pos_dims, bool dynamic_threshold);
-void useTestImages(String path, String SVMPath);
-void useTestImagesRandom(String path, String SVMPath);
+void useTestImages(String path, String SVMPath, bool compare);
+void useTestImagesRandom(String path, String SVMPath, bool compare);
 void addtoFalsePositives(double** T);
 std::vector<std::vector<float>> detection_Evaluation(string dataSet_path, std::vector<string> SVM_Models, bool betterDetect);
 void detection_Evaluation_Graphical(string dataSet_path, std::vector<string> SVM_Models, bool betterDetection);
@@ -62,12 +62,13 @@ int main() {
 	bool presentation = false;
 	bool dynamic_threshold = false;
 	bool exit = false;
+	bool compare = false;
 
 	srand(time(NULL));
 
 	while (true) {
 		cout << "choose what you want to do:" << endl;
-		cout << "train (1), test (2), eval (3), presentation (4) or exit (5)? ";
+		cout << "train (1), test (2), eval (3), presentation (4), compare a retrained SVM (5) or exit (6)? ";
 		bool set = false;
 		string input = "";
 		while (!set) {
@@ -91,6 +92,9 @@ int main() {
 					presentation = true;
 					break;
 				case 5:
+					compare = true;
+					break;
+				case 6:
 					exit = true;
 					break;
 				default:
@@ -105,7 +109,7 @@ int main() {
 
 		string svmModel;
 		if (!exit) {
-			cout << "Enter the svm file name you want to use. for eval and training, just enter until the primary number (e.g. svm_6), for testing the full name (e.g. svm_6.1.xml): ";
+			cout << "Enter the svm file name you want to use. for eval, training and comparing, just enter until the primary number (e.g. svm_6), for testing the full name (e.g. svm_13.1.xml): ";
 			set = false;
 			input = "";
 			getline(cin, input);
@@ -252,12 +256,14 @@ int main() {
 
 		if (presentation) {
 			//hier bitte
-			useTestImagesRandom(POSTESTFILE, svmModel);
+			useTestImagesRandom(POSTESTFILE, svmModel, false);
+			destroyAllWindows();
 		}
 
 		if (test) {
 			//use svm on test images
-			useTestImages(POSTESTFILE, svmModel);
+			useTestImages(POSTESTFILE, svmModel, false);
+			destroyAllWindows();
 		}
 
 		if (eval) {
@@ -297,6 +303,30 @@ int main() {
 			return 0;
 		}
 
+		if (compare) {
+			bool oke = false;
+			int i = 0;
+			while (!oke) {
+				cout << "Do you want to use the full data set (1), or 10 random images(2)" << endl;
+				cin >> i;
+				switch (i){
+					case 1:
+						useTestImages(POSTESTFILE, svmModel, true);
+						oke = true;
+						destroyAllWindows();
+						break;
+					case 2:
+						useTestImagesRandom(POSTESTFILE, svmModel, true);
+						oke = true;
+						destroyAllWindows();
+						break;
+					default:
+						cout << "Wrong input!" << endl;
+						break;
+				}
+			}
+		}
+
 		cout << "finished, enter to continue...";
 		getchar();
 
@@ -304,6 +334,7 @@ int main() {
 		test = false;
 		eval = false;
 		presentation = false;
+		compare = false;
 		//again and again
 		continue;
 	}
@@ -400,39 +431,64 @@ void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg
 }
 
 
-void useTestImagesRandom(String path, String SVMPath) {
+void useTestImagesRandom(String path, String SVMPath, bool compare) {
 	cout << "Testing " << SVMPath << " with test images" << endl;
-	ifstream locations;
-	locations.open(path);
-	String file;
-	int c = 0;
 	vector<vector<int>> bBoxes;
 	vector<Mat> images = getImageVector(path);
 	getBoundingBox(ANNOTATIONTESTFILE, bBoxes);
-	for (int i = 0; i < 10; i++) {
-		int pos = rand() % images.size();
-		std::vector<std::vector<float>> final_Box;
-		std::vector<std::vector<float>> dWinfeat = slideOverImage(images[pos], SVMPath, false);
-		non_Max_Suppression(final_Box, dWinfeat, TEMPLATEWIDTH, TEMPLATEHEIGHT);
-		showMaximabBoxes(final_Box, images[pos], bBoxes[pos], SVMPath);
+	if (!compare) {
+		for (int i = 0; i < 10; i++) {
+			int pos = rand() % images.size();
+			std::vector<std::vector<float>> final_Box;
+			std::vector<std::vector<float>> dWinfeat = slideOverImage(images[pos], SVMPath, false);
+			non_Max_Suppression(final_Box, dWinfeat, TEMPLATEWIDTH, TEMPLATEHEIGHT);
+			showMaximabBoxes(final_Box, images[pos], bBoxes[pos], SVMPath);
+		}
+	}
+	else {
+		for (int i = 0; i < 10; i++) {
+			int pos = rand() % images.size();
+			std::vector<std::vector<float>> final_Box1;
+			std::vector<std::vector<float>> final_Box2;
+			std::vector<std::vector<float>> dWinfeat1 = slideOverImage(images[pos], SVMPath+".0.xml", false);
+			std::vector<std::vector<float>> dWinfeat2 = slideOverImage(images[pos], SVMPath+".1.xml", false);
+			non_Max_Suppression(final_Box1, dWinfeat1, TEMPLATEWIDTH, TEMPLATEHEIGHT);
+			non_Max_Suppression(final_Box2, dWinfeat2, TEMPLATEWIDTH, TEMPLATEHEIGHT);
+			showMaximabBoxes(final_Box1, images[pos], bBoxes[pos], "Original");
+			showMaximabBoxes(final_Box2, images[pos], bBoxes[pos], "Retrained");
+		}
 	}
 	
 }
 
-void useTestImages(String path, String SVMPath) {
+void useTestImages(String path, String SVMPath, bool compare) {
 	cout << "Testing " << SVMPath << " with test images" << endl;
 	ifstream locations;
 	locations.open(path);
-	String file;
 	int c = 0;
 	vector<vector<int>> bBoxes;
 	vector<Mat> images = getImageVector(path);
 	getBoundingBox(ANNOTATIONTESTFILE, bBoxes);
-	for (auto img: images) {
-		std::vector<std::vector<float>> final_Box;
-		std::vector<std::vector<float>> dWinfeat = slideOverImage(img, SVMPath, false);
-		non_Max_Suppression(final_Box, dWinfeat, TEMPLATEWIDTH, TEMPLATEHEIGHT);
-		showMaximabBoxes(final_Box, img, bBoxes[c++], SVMPath);		
+	if (!compare) {
+		for (auto img : images) {
+			std::vector<std::vector<float>> final_Box;
+			std::vector<std::vector<float>> dWinfeat = slideOverImage(img, SVMPath, false);
+			non_Max_Suppression(final_Box, dWinfeat, TEMPLATEWIDTH, TEMPLATEHEIGHT);
+			showMaximabBoxes(final_Box, img, bBoxes[c++], SVMPath);
+		}
+	}
+	else {
+		for (auto img : images) {
+			std::vector<std::vector<float>> final_Box1;
+			std::vector<std::vector<float>> final_Box2;
+			std::vector<std::vector<float>> dWinfeat1 = slideOverImage(img, SVMPath+".0.xml", false);
+			std::vector<std::vector<float>> dWinfeat2 = slideOverImage(img, SVMPath+".1.xml", false);
+			non_Max_Suppression(final_Box1, dWinfeat1, TEMPLATEWIDTH, TEMPLATEHEIGHT);
+			non_Max_Suppression(final_Box2, dWinfeat2, TEMPLATEWIDTH, TEMPLATEHEIGHT);
+			showMaximabBoxes(final_Box1, img, bBoxes[c], "Original");
+			showMaximabBoxes(final_Box2, img, bBoxes[c], "Retrained");
+			c++;
+		}
 	}
 }
 

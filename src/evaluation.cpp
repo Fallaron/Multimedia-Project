@@ -146,6 +146,8 @@ void showMaximabBoxes(std::vector<std::vector<float>>& final_BBox, Mat img, std:
 	float overlap = 0;
 	if (img.empty())
 		return;
+	Mat img2;
+	img.copyTo(img2);
 	for (auto &b : final_BBox) {
 		int xtl = b[0];
 		int ytl = b[1];
@@ -154,7 +156,7 @@ void showMaximabBoxes(std::vector<std::vector<float>>& final_BBox, Mat img, std:
 		float score = b[4];
 		Point tl(xtl, ytl);
 		Point br(xbr, ybr);
-		rectangle(img, tl, br, Scalar(0, 255, 0)); for (int i = 0; i < bBoxesOrig.size(); i += 4) {
+		rectangle(img2, tl, br, Scalar(0, 255, 0)); for (int i = 0; i < bBoxesOrig.size(); i += 4) {
 			int xtl = bBoxesOrig[i];
 			int ytl = bBoxesOrig[i + 1];
 			int xbr = bBoxesOrig[i + 2];
@@ -171,7 +173,7 @@ void showMaximabBoxes(std::vector<std::vector<float>>& final_BBox, Mat img, std:
 
 		}
 		
-		putText(img, to_string(score) + "  O: " +to_string(overlap*100) + "%" , tl, FONT_HERSHEY_PLAIN, 0.85, Scalar(0, 255, 0), 1.5);
+		putText(img2, to_string(score) + "  O: " +to_string(overlap*100) + "%" , tl, FONT_HERSHEY_PLAIN, 0.85, Scalar(0, 255, 0), 1.5);
 		overlap = 0;
 	}
 
@@ -182,11 +184,11 @@ void showMaximabBoxes(std::vector<std::vector<float>>& final_BBox, Mat img, std:
 		int ybr = bBoxesOrig[i+3];
 		Point tl(xtl, ytl);
 		Point br(xbr, ybr);
-		rectangle(img, tl, br, Scalar(0, 0, 255));
+		rectangle(img2, tl, br, Scalar(0, 0, 255));
 	}
 
 
-	imshow(windowName, img);
+	imshow(windowName, img2);
 	waitKey();
 
 }
