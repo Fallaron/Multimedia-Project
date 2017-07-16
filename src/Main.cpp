@@ -41,7 +41,7 @@ double*** getHOGFeatureArrayOnScaleAt(int x, int y, vector<int> &dims, double **
 void freeHoGFeaturesOnScale(double*** feat);
 void freeVectorizedFeatureArray(double ** v_feat);
 void freeHog(vector<int> dims, double *** feature_Array);
-void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg_feat_array, vector<int> neg_dims, double ** pos_feat_array, vector<int> pos_dims, bool dynamic_threshold);
+void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg_feat_array, vector<int> neg_dims, double ** pos_feat_array, vector<int> pos_dims, bool dynamic_threshold, bool auto_train);
 void useTestImages(String path, String SVMPath, bool compare);
 void useTestImagesRandom(String path, String SVMPath, bool compare);
 void addtoFalsePositives(double** T);
@@ -122,6 +122,7 @@ int main() {
 		if (train) {
 			int iterations;
 			float epsilon;
+			bool auto_train;
 
 			cout << "training ..." << endl;
 
@@ -208,7 +209,30 @@ int main() {
 				set = true;
 			}
 
-			cout << "running with " << iterations << " iterations and " << epsilon << " epsilon" << endl;
+			cout << "do you want to use autotrain? (y/n default: y): ";
+			set = false;
+			input = "";
+			while (!set) {
+				getline(cin, input);
+				if (input.empty()) {
+					auto_train = true;
+					set = true;
+				}
+				else {
+					if (input == "y") {
+						auto_train = true;
+					}
+					else if (input == "n") {
+						auto_train = false;
+					}
+					else {
+						continue;
+					}
+				}
+				set = true;
+			}
+
+			cout << "running with " << iterations << " iterations and " << epsilon << " epsilon and " << (auto_train ? "auto_train" : "no auto_train") <<  endl;
 			
 			vector<std::vector<int>> boundingBoxes;
 			getBoundingBox(ANNOTATIONTESTFILE, boundingBoxes);
@@ -231,14 +255,14 @@ int main() {
 			cout << "Training classifier... ";
 			
 			// train
-			train_classifier(pos_datasetFeatArray, neg_datasetFeatArray, pos_feat_dims, neg_feat_dims, svmModel+".0.xml", params);
+			train_classifier(pos_datasetFeatArray, neg_datasetFeatArray, pos_feat_dims, neg_feat_dims, svmModel+".0.xml", params, auto_train);
 			cout << "done!" << endl;
 
 			bool satisfied = false;
 			// retrain
 			while (!satisfied) {
 				cout << "Retraining... " << endl;
-				retrainModel(params, NEGFILE, svmModel, neg_datasetFeatArray, neg_feat_dims, pos_datasetFeatArray, pos_feat_dims, dynamic_threshold);
+				retrainModel(params, NEGFILE, svmModel, neg_datasetFeatArray, neg_feat_dims, pos_datasetFeatArray, pos_feat_dims, dynamic_threshold, auto_train);
 				cout << "Retraning done!" << endl;
 				string input = "";
 				if (dynamic_threshold) {
@@ -255,7 +279,6 @@ int main() {
 		}
 
 		if (presentation) {
-			//hier bitte
 			useTestImagesRandom(POSTESTFILE, svmModel, false);
 			destroyAllWindows();
 		}
@@ -297,11 +320,7 @@ int main() {
 			SVM_Models.push_back(svmModel+".1.xml");
 			
 			detection_Evaluation_Graphical(POSTESTFILE, SVM_Models, betterDetection);
-		}
-		
-		if (exit) {
-			return 0;
-		}
+		}		
 
 		if (compare) {
 			bool oke = false;
@@ -327,6 +346,10 @@ int main() {
 			}
 		}
 
+		if (exit) {
+			return 0;
+		}
+
 		cout << "finished, enter to continue...";
 		getchar();
 
@@ -347,7 +370,7 @@ void addtoFalsePositives(double** T) {
 	}
 }
 
-void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg_feat_array, vector<int> neg_dims, double ** pos_feat_array, vector<int> pos_dims, bool dynamic_threshold) {
+void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg_feat_array, vector<int> neg_dims, double ** pos_feat_array, vector<int> pos_dims, bool dynamic_threshold, bool auto_train) {
 	ifstream locations;
 	String file;
 	vector<int> true_neg_dims;
@@ -426,7 +449,7 @@ void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg
 	}
 	//TODO: Free vector<double**>
 	cout << "Gathered Hard Negatives!" << endl;
-	train_classifier(pos_feat_array, neg_feat_array, pos_dims, neg_dims, SVMPath+".1.xml", params, true_neg_feat, true_neg_dims);
+	train_classifier(pos_feat_array, neg_feat_array, pos_dims, neg_dims, SVMPath+".1.xml", params, auto_train, true_neg_feat, true_neg_dims);
 	cout << "Finished retraining" << endl;
 }
 

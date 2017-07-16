@@ -53,7 +53,7 @@ cv::Mat generate_SVM_trainSet(double **pos_featArray, double** neg_featArray, st
 	return trainDataSet;
 }
 
-std::string train_classifier(double **pos_featArray, double** neg_featArray, std::vector<int> pos_dims, std::vector<int>neg_dims, std::string SVMModel_Name, CvSVMParams params, double ** true_neg_feat_array, vector<int> true_neg_dims) {
+std::string train_classifier(double **pos_featArray, double** neg_featArray, std::vector<int> pos_dims, std::vector<int>neg_dims, std::string SVMModel_Name, CvSVMParams params, bool auto_train, double ** true_neg_feat_array, vector<int> true_neg_dims) {
 	cout << "training svm " << SVMModel_Name << "...";
 	Mat responses;
 	Mat data = generate_SVM_trainSet(pos_featArray, neg_featArray, pos_dims, neg_dims, responses, true_neg_feat_array, true_neg_dims);
@@ -66,8 +66,13 @@ std::string train_classifier(double **pos_featArray, double** neg_featArray, std
 
 	// pick one image at a time from Mat Data and train the SVM with it and move on to the next till all are done
 	bool model;
-	//model = SVM.train_auto(data, responses, varidx, sample, params);
-	model = SVM.train_auto(data, responses, varidx, sample, params);
+	
+	if (auto_train) {
+		model = SVM.train_auto(data, responses, varidx, sample, params);
+	}
+	else {
+		model = SVM.train(data, responses, varidx, sample, params);
+	}
 
 	if (model) {
 		SVM.save(SVMModel_Name.c_str());
