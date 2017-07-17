@@ -146,6 +146,9 @@ int main() {
 				set = true;
 			}
 
+			//epsilon is not used right now
+			epsilon = EPSILON;
+			/*
 			cout << "select epsilon, default is " << EPSILON << ": ";
 			set = false;
 			input = "";
@@ -165,6 +168,7 @@ int main() {
 				}
 				set = true;
 			}
+			*/
 
 			cout << "select disvaluethreshold, default is " << DISVALUETRESHOLD << ": ";
 			set = false;
