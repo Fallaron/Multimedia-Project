@@ -3,7 +3,8 @@
 ## Installation:
 * Clone repo (with git client or visual studio)
 * Copy [OpenCV(2413) folder](https://www.kuenzler.io/share/opencv.zip) to project root. (same level as src folder)
-* Copy the train and test folder from the [INRIA Person Dataset](http://pascal.inrialpes.fr/data/human/) to the project root. 
+* Copy the train and test folder from the [INRIA Person Dataset](http://pascal.inrialpes.fr/data/human/) to the project root. If you face problems (e.g. with symlinks on windows) use [these folders](https://www.kuenzler.io/share/Dataset.zip)
+
 * Open Project with visual studio
 
 Project folder structure should look like this:
