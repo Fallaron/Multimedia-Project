@@ -199,8 +199,6 @@ void detectionWindow_features(std::vector<std::vector<float>>& detWinFeat, int x
 	temp.push_back(x);
 	temp.push_back(y);
 	temp.push_back(scale);
-	//temp.push_back(img_id);
 	detWinFeat.push_back(temp);
 	temp.clear();
 }
-

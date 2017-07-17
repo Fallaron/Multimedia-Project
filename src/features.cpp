@@ -82,8 +82,6 @@ std::vector<int> detection_true_count(const std::vector<std::vector<float>> pred
 		cv::Rect groundtruth_bBox(x1, y1, x2 - x1, y2 - y1);
 		// compare a single to all boxes stored in pred_box for this particular Image
 		// go through all predicted bounding boxes until a matching ground truth is found if any.. 
-		//int num_pBoxes = 0;
-		//false_pos_pBoxes = 0;
 		for (auto &box : prediction_bBox) {
 		
 			int pos_x = box[0];
@@ -128,7 +126,6 @@ void get_HoG_feat_trainSets(double **&dataSet_featArray, std::string dataSet_pat
 		srand(time(NULL));
 		cv::Mat img_patch;
 		int num_img_patches;
-		//int num_img = dataSet_img_paths.size();
 		int p = 0;
 
 		int x = (temp_Width / cell_size);
@@ -229,9 +226,7 @@ void get_HoG_feat_trainSets(double **&dataSet_featArray, std::string dataSet_pat
 				}
 				free(FHoG);
 			}//end if
-		}// end for
-		 // deallocate memory for FHOG
-		
+		}// end for		
 		cout << "done!" << endl;
 	}// end else
 
@@ -251,5 +246,3 @@ void get_dataSet(std::string dataSet_listFile_path, vector<std::string>& img_pat
 		img_paths.push_back(img_path);
 	}
 }
-
-

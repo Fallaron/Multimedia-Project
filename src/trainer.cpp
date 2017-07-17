@@ -121,12 +121,8 @@ float  predict_pedestrian(double ** featArray, vector<int> feat_dims, CvSVM *new
 	for (int i = 0; i < feat_dims[0]; i++) {
 		for (int j = 0; j < feat_dims[1]; j++) {
 			predictSample.at<float>(i, j) = predicted.at<float>(i, j);
-		}
-
-		// +++DEBUG+++
-		//cout << res <<",";
-		// store results of prediction if person
-
+		}	
+	// store results of prediction if person
 	}
 	float res = newSVM->predict(predictSample);
 	float distanceDFVal = newSVM->predict(predictSample, true);
@@ -157,7 +153,6 @@ double ** vectorize_32_HoG_feature(double ***featArray, int cell_size, int temp_
 		for (int j = 0; j < x_cells; j++) {
 			for (int n = 0; n < num_dims; n++) {
 				vectorised_featArray[0][h++] = featArray[i][j][n];
-				//cout << "i:" << i << ",j:" << j << ",n:" << n << ", val:" << featArray[i][j][n] << endl;
 			}
 		}
 	}

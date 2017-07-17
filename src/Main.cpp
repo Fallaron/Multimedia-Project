@@ -9,7 +9,6 @@
 #include "features.h"
 #include "trainer.h"
 #include "evaluation.h"
-//#include <omp.h>
 
 #define ALLOCATIONFAULT -666
 #define TEMPLATEFAILUREWIDTH -20
@@ -448,10 +447,7 @@ void retrainModel(CvSVMParams params, String path, String SVMPath, double ** neg
 		for (int n = 0; n < 4096; n++) {
 			true_neg_feat[f][n] = templFeat[0][n];
 		}
-		//TODO: Free double**
-		//freeVectorizedFeatureArray(templFeat);
 	}
-	//TODO: Free vector<double**>
 	cout << "Gathered Hard Negatives!" << endl;
 	train_classifier(pos_feat_array, neg_feat_array, pos_dims, neg_dims, SVMPath+".1.xml", params, auto_train, true_neg_feat, true_neg_dims);
 	cout << "Finished retraining" << endl;
@@ -660,7 +656,7 @@ std::vector<std::vector<float>> slideOverImage(Mat img, string svm_model_path, b
 	int templatew = TEMPLATEWIDTH;
 	static double scalingfactor = pow(2, 1.0 / LAMDA);
 
-	std::vector<std::vector<float>> detectionWinFeat = std::vector<std::vector<float>>(); // added
+	std::vector<std::vector<float>> detectionWinFeat = std::vector<std::vector<float>>();
 
 	CvSVM *newSVM = new CvSVM;
 	newSVM->load(svm_model_path.c_str());
